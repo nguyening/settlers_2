@@ -19,8 +19,9 @@ class HexNetworkTest extends PHPUnit_Framework_TestCase {
 		$map = $this->map;
 		$map_reflection = $this->map_reflection;
 
-		$getHex = $map_reflection->getMethod('getHex');
-		$getHex->setAccessible(true);
+		$prop = $map_reflection->getProperty('hexes');
+		$prop->setAccessible(true);
+		$hexes = $prop->getValue($map);
 
 		// $count = array(
 		// 	'faces' => array(),
@@ -28,10 +29,8 @@ class HexNetworkTest extends PHPUnit_Framework_TestCase {
 		// 	'vertices' => array()
 		// );
 
-		for($y = -1 * $map->map_size; $y <= $map->map_size; $y++) {
-			for($x = -1 * $map->map_size; $x <= $map->map_size; $x++) {
-				$hex = $getHex->invokeArgs($map, array($x, $y));
-
+		foreach($hexes as $r => $row) {
+			foreach($row as $c => $hex) {
 				for($i = 0; $i < 6; $i++) {
 					$this->assertNotNull($hex->getVertex($i));
 					$this->assertNotNull($hex->getEdge($i));
@@ -47,9 +46,8 @@ class HexNetworkTest extends PHPUnit_Framework_TestCase {
 		}
 
 		// Math properties of parts for a hexagonal grid
-		// -- These properties don't work because we are actually making 
-		// a few more hexes than a perfect hexagonal grid would contain.
-
+		// -- These properties don't work out because our map isn't a hexagonal grid,
+		// but a hexagon composed of hexagons..
 		// $this->assertCount(count($count['faces']) * 3, $count['edges']);
 		// $this->assertCount(count($count['faces']) * 2, $count['vertices']);
 	}
@@ -326,10 +324,12 @@ class HexNetworkTest extends PHPUnit_Framework_TestCase {
 		$getCwHex = $map_reflection->getMethod('getCwHex');
 		$getCwHex->setAccessible(true);
 
-		for($y = -1 * $map->map_size; $y <= $map->map_size; $y++) {
-			for($x = -1 * $map->map_size; $x <= $map->map_size; $x++) {
-				$hex = $getHex->invokeArgs($map, array($x, $y));
+		$prop = $map_reflection->getProperty('hexes');
+		$prop->setAccessible(true);
+		$hexes = $prop->getValue($map);
 
+		foreach($hexes as $r => $row) {
+			foreach($row as $c => $hex) {
 				for($i = 0; $i < 6; $i++) {
 					$vertex = $hex->getVertex($i);
 					$edge = $hex->getEdge($i);

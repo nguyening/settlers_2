@@ -1,7 +1,7 @@
 <?php
 namespace Settlers;
 class Edge {
-	private $hex;
+	public $hex;
 	private $vertices;	// endpoints of this edge
 
 	public function __construct($params)

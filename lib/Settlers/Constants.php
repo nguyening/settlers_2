@@ -6,14 +6,78 @@ abstract class Constants extends BasicEnum {
 	const TERRAIN_MOUNTAIN = 2;		// Ore
 	const TERRAIN_HILL = 3;			// Brick
 	const TERRAIN_FIELD = 4;		// Wheat
-	const TERRAIN_PASTURE = 4;		// Sheep
-	const TERRAIN_FOREST = 5;		// Wood
+	const TERRAIN_PASTURE = 5;		// Sheep
+	const TERRAIN_FOREST = 6;		// Wood
 
 	const RESOURCE_ORE = 0;
 	const RESOURCE_BRICK = 1;
 	const RESOURCE_WHEAT = 2;
 	const RESOURCE_SHEEP = 3;
 	const RESOURCE_WOOD = 4;
+	const RESOURCE_ANY = 5;
 
 	const MAX_SIZE = 32;
+
+	const TERRAIN_DISTRIBUTION = array(
+		Constants::TERRAIN_MOUNTAIN => 3,
+		Constants::TERRAIN_HILL => 3,
+		Constants::TERRAIN_FIELD => 4,
+		Constants::TERRAIN_PASTURE => 4,
+		Constants::TERRAIN_FOREST => 4,
+	);
+	
+	const CHIT_DESERT = 7;
+	const CHIT_DISTRIBUTION = array(
+		2 => 1,
+		3 => 2,
+		4 => 2,
+		5 => 2,
+		6 => 2,
+		8 => 2,
+		9 => 2,
+		10 => 2,
+		11 => 2,
+		12 => 1
+	);
+
+	const PORT_DISTRIBUTION = array(
+		Constants::RESOURCE_ORE,-1,-1,-1,
+		Constants::RESOURCE_BRICK,-1,-1,
+		Constants::RESOURCE_WHEAT,-1,-1,
+		Constants::RESOURCE_SHEEP,-1,-1,-1,
+		Constants::RESOURCE_WOOD,-1,-1,
+		Constants::RESOURCE_ANY,-1,-1,
+		Constants::RESOURCE_ANY,-1,-1,-1,
+		Constants::RESOURCE_ANY,-1,-1,
+		-1,-1,-1
+	);
+
+	public function terrainToResource($terrain)
+	{
+		switch($terrain) {
+			case Constants::TERRAIN_MOUNTAIN:
+				return Constants::RESOURCE_ORE;
+			break;
+
+			case Constants::TERRAIN_HILL:
+				return Constants::RESOURCE_BRICK;
+			break;
+
+			case Constants::TERRAIN_FIELD:
+				return Constants::RESOURCE_WHEAT;
+			break;
+
+			case Constants::TERRAIN_PASTURE:
+				return Constants::RESOURCE_SHEEP;
+			break;
+
+			case Constants::TERRAIN_FOREST:
+				return Constants::RESOURCE_WOOD;
+			break;
+
+			default:
+				return -1;
+			break;
+		}
+	}
 }

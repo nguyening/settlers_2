@@ -21,22 +21,34 @@ class MapTest extends PHPUnit_Framework_TestCase {
 		));
 	}
 
-	// public function testCreate()
-	// {
-	// 	$map_size = 3;
-	// 	$map = new \Settlers\Map(array(
-	// 		'map_size' => $map_size
-	// 	));
+	/**
+	 * @expectedException		Exception
+	 * @expectedExceptionCode	2
+	 */
+	public function testBaronInvalidPlacement()
+	{
+		$map = new \Settlers\Map(array(
+			'map_size' => 2,
+		));
 
-	// 	$this->assertObjectHasAttribute('hexes', $map);
+		$map->placeBaron(-100, 1);		
+	}
 
-	// }
+	public function testBaronPlacement()
+	{
+		$map = new \Settlers\Map(array(
+			'map_size' => 2,
+		));
+		$map_reflection = new ReflectionClass('\Settlers\Map');
+		$getHex = $map_reflection->getMethod('getHex');
+		$getHex->setAccessible(true);
 
-	// /**
-	//  * @depends testCreate
-	//  */
-	// public function testValidGrid($map)
-	// {
-		
-	// }
+		$this->assertNull($map->getBaron());
+		$map->placeBaron(1, 1);
+
+		$this->assertSame(
+			$getHex->invokeArgs($map, array(1, 1)),
+			$hex_baron = $map->getBaron()
+		);
+	}
 }

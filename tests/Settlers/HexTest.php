@@ -24,6 +24,8 @@ class HexTest extends PHPUnit_Framework_TestCase {
 		$hex = new \Settlers\Hex(array('x' => 1, 'y' => 1));
 		$this->assertObjectHasAttribute('x', $hex);
 		$this->assertObjectHasAttribute('y', $hex);
+		$this->assertObjectHasAttribute('chit', $hex);
+		$this->assertObjectHasAttribute('terrain', $hex);
 		$this->assertObjectHasAttribute('vertices', $hex);
 		$this->assertObjectHasAttribute('edges', $hex);
 
@@ -140,5 +142,63 @@ class HexTest extends PHPUnit_Framework_TestCase {
 
 		$this->assertSame($hex->getEdge(0), $edge);
 		$this->assertSame($hex->getEdge(3), $edge);
+	}
+
+	/**
+	 * @depends testCreate
+	 */
+	public function testNullChit($hex)
+	{
+		$this->assertNull($hex->getChit());
+	}
+
+	/**
+	 * @depends testCreate
+	 */
+	public function testSetChit($hex)
+	{
+		$hex->setChit(10);
+		$this->assertNotNull($hex->getChit());
+		$this->assertEquals(10, $hex->getChit());
+	}
+
+	/**
+	 * @depends 				testCreate
+	 * @expectedException		Exception
+	 * @expectedExceptionCode	2
+	 */
+	public function testSetInvalidChit($hex)
+	{
+		$hex->setChit("a");
+	}
+
+	/**
+	 * @depends testCreate
+	 */
+	public function testNullTerrain($hex)
+	{
+		$this->assertNull($hex->getTerrain());
+	}
+
+	/**
+	 * @depends testCreate
+	 */
+	public function testSetTerrain($hex)
+	{
+		$terrain = \Settlers\Constants::TERRAIN_SEA;
+
+		$hex->setTerrain($terrain);
+		$this->assertNotNull($hex->getTerrain());
+		$this->assertSame($terrain, $hex->getTerrain());
+	}
+
+	/**
+	 * @depends 				testCreate
+	 * @expectedException		Exception
+	 * @expectedExceptionCode	2
+	 */
+	public function testSetInvalidTerrain($hex)
+	{
+		$hex->setTerrain("a");
 	}
 }

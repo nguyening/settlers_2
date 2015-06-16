@@ -1,7 +1,7 @@
 <?php
 namespace Settlers;
 class Vertex {
-	private $hex;
+	public $hex;
 	private $edges;		// edges that are incident on this vertex
 
 	public function __construct($params)

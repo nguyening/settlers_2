@@ -34,7 +34,12 @@ class HexMathTest extends PHPUnit_Framework_TestCase {
 			$count += count($prop->getValue($map)[$y]);
 		}
 
-		$this->assertEquals(pow(2 * $map_size + 1, 2), $count);
+		// I'll figure out the math property for this..
+		$expected = 0;
+		for($r = $map_size; $r > 0; $r--) {
+			$expected += 2 * $map_size - ($map_size - $r);
+		}
+		$this->assertEquals(2 * $expected + (2 * $map_size + 1), $count);
 	}
 
 	public function testGetInvalidHex()
@@ -56,9 +61,9 @@ class HexMathTest extends PHPUnit_Framework_TestCase {
 		$getHex = $map_reflection->getMethod('getHex');
 		$getHex->setAccessible(true);
 
-		$hex = $getHex->invokeArgs($map, array(3, 2));
-		$this->assertEquals($hex->x, 3);
-		$this->assertEquals($hex->y, 2);
+		$hex = $getHex->invokeArgs($map, array(1, 1));
+		$this->assertEquals($hex->x, 1);
+		$this->assertEquals($hex->y, 1);
 	}
 
 	public function dataCoords()
@@ -114,7 +119,7 @@ class HexMathTest extends PHPUnit_Framework_TestCase {
 
 		$getHex = $map_reflection->getMethod('getHex');
 		$getHex->setAccessible(true);
-		$hex = $getHex->invokeArgs($map, array(3, 2));
+		$hex = $getHex->invokeArgs($map, array(1, 1));
 
 		$getHexInDirection = $map_reflection->getMethod('getHexInDirection');
 		$getHexInDirection->setAccessible(true);
