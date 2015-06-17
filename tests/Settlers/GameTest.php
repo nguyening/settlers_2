@@ -80,4 +80,37 @@ class GameTest extends PHPUnit_Framework_TestCase {
 			->getMock()
 		);
 	}
+
+	/**
+	 * @depends	testAddPlayers
+	 */
+	public function testDetermineOrdering($game)
+	{
+		$game->determinePlayerOrdering();
+
+		$game_reflection = new ReflectionClass('\Settlers\Game');
+
+		$prop = $game_reflection->getProperty('players');
+		$prop->setAccessible(true);
+		$players = $prop->getValue($game);
+
+		$prop = $game_reflection->getProperty('players_order');
+		$prop->setAccessible(true);
+		$players_order = $prop->getValue($game);
+
+		// Every player has an assignment
+		foreach(array_values($players_order) as $idx => $player_slot) {
+			$this->assertTrue(in_array($player_slot, array_keys($players)));
+			
+		}
+	}
+
+	/**
+	 * @depends testAddPlayers
+	 */
+	public function testCurrentPlayer($game)
+	{
+		$slot = $game->getPlayerTurn();
+		$this->assertTrue($game->getPlayer($slot) instanceof \Settlers\Player);
+	}
 }

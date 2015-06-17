@@ -83,7 +83,7 @@ class GameCostTest extends PHPUnit_Framework_TestCase {
 		}
 
 		foreach(array_keys(\Settlers\Constants::COST_BUILD) as $idx => $build_type) {
-			$game->purchase($player, $build_type);
+			$game->playerPurchase($player, $build_type);
 		}
 
 		foreach(array_keys($bank) as $idx => $resource) {

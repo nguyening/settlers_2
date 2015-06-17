@@ -4,6 +4,8 @@ class Game {
 	public $room_size;
 	private $map;
 	private $players = array();
+	private $players_order;
+	private $current_turn;
 
 	public function __construct($params = array())
 	{
@@ -32,7 +34,9 @@ class Game {
 		else {
 			$this->map = $params['map'];
 		}
+		
 		$this->room_size = $params['room_size'];
+		$this->current_turn = 0;
 	}
 
 	public function addPlayer($slot, $player)
@@ -61,6 +65,20 @@ class Game {
 	 * GAME LOGIC
 	 */
 
+	public function determinePlayerOrdering()
+	{
+		if(empty($this->players)) throw new \Exception('Invalid action.', 3);
+		$this->players_order = array_keys($this->players);
+
+		shuffle($this->players_order);
+	}
+
+	public function getPlayerTurn()
+	{
+		if(empty($this->players_order) || empty($this->players)) throw new \Exception('Invalid action.', 3);
+		return $this->players_order[$this->current_turn];
+	}
+
 	public function produceResourcesAtHex($hex)
 	{
 		if(empty($hex)) throw new \Exception('Missing parameter.', 1);
@@ -81,7 +99,7 @@ class Game {
 		}
 	}
 
-	public function purchase($player, $build_type)
+	public function playerPurchase($player, $build_type)
 	{
 		if(empty($player) || !isset($build_type)) throw new \Exception('Missing parameter(s).', 1);
 		if(!$player instanceof \Settlers\Player || !is_int($build_type))
