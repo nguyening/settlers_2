@@ -10,6 +10,7 @@ class Player {
 		\Settlers\Constants::RESOURCE_WOOD => 0,
 		\Settlers\Constants::RESOURCE_ANY => 0
 	);
+	private $pieces = array();
 
 	public function __construct($params = array())
 	{
@@ -17,6 +18,20 @@ class Player {
 		// if(!$params['user'] instanceof User) throw new \Exception('Invalid parameter(s).', 2);
 
 		$this->user = $params['user'];
+	}
+
+	public function addPiece($piece)
+	{
+		if(empty($piece)) throw new \Exception('Missing parameter.', 1);
+		if(!$piece instanceof \Settlers\MapPiece) throw new \Exception('Invalid parameter.', 2);
+
+		if(empty($this->pieces[$piece->getType()])) $this->pieces[$piece->getType()] = array();
+		$this->pieces[$piece->getType()][] = $piece;
+	}
+
+	public function getPieces()
+	{
+		return $this->pieces;
 	}
 
 	public function getResourceCount($resource)

@@ -29,7 +29,7 @@ class MapPlacementTest extends PHPUnit_Framework_TestCase {
 
 	/**
 	 * @expectedException		Exception
-	 * @expectedExceptionCode	3
+	 * @expectedExceptionCode	2
 	 */
 	public function testPlaceSettlementInvalid()
 	{
@@ -260,5 +260,39 @@ class MapPlacementTest extends PHPUnit_Framework_TestCase {
 
 		$this->assertTrue($map->isIncidentEdgesOccupiedByPlayer($vertex, $player));
 		$this->assertTrue($map->isIncidentEdgesOccupiedByPlayer($vertex, $p2));
+	}
+
+	public function testPlayerPiecesOnHex()
+	{
+		$map = $this->map;
+		$player = $this->player;
+		$hexes = $this->hexes;
+		$p2 = $this->getMockBuilder('\Settlers\Player')
+			->disableOriginalConstructor()
+			->getMock();
+
+		$v1 = $hexes[0][0]->getVertex(0);
+		$v2 = $hexes[0][0]->getVertex(3);
+		$v3 = $hexes[0][0]->getVertex(4);
+		$e1 = $hexes[0][0]->getEdge(1);
+		$e2 = $hexes[0][0]->getEdge(2);
+
+		$player_pieces = $map->getPiecesAtHex($hexes[0][0]);
+		$this->assertArrayNotHasKey(spl_object_hash($player), $player_pieces);
+		$this->assertArrayNotHasKey(spl_object_hash($p2), $player_pieces);
+
+		foreach(array($v1, $v2, $v3) as $idx => $vertex) {
+			$map->placePiece($player, $vertex, \Settlers\Constants::BUILD_SETTLEMENT);
+		}
+
+		foreach(array($e1, $e2) as $idx => $edge) {
+			$map->placePiece($p2, $edge, \Settlers\Constants::BUILD_ROAD);
+		}
+
+		$player_pieces = $map->getPiecesAtHex($hexes[0][0]);
+		$this->assertArrayHasKey(spl_object_hash($player), $player_pieces);
+		$this->assertArrayHasKey(spl_object_hash($p2), $player_pieces);
+		$this->assertCount(3, $player_pieces[spl_object_hash($player)][\Settlers\Constants::BUILD_SETTLEMENT]);
+		$this->assertCount(2, $player_pieces[spl_object_hash($p2)][\Settlers\Constants::BUILD_ROAD]);
 	}
 }

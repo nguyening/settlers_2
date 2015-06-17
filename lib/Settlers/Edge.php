@@ -1,15 +1,11 @@
 <?php
 namespace Settlers;
 class Edge {
-	public $hex;
-	public $piece;
+	private $piece;
 	private $vertices;	// endpoints of this edge
 
 	public function __construct($params = array())
 	{
-		if(empty($params['hex'])) throw new \Exception('Missing parameters.', 1);
-		if(!$params['hex'] instanceof \Settlers\Hex) throw new \Exception('Invalid parameters.', 2);
-		$this->hex = $params['hex'];
 		$this->vertices = array();
 	}
 

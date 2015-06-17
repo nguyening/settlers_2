@@ -68,4 +68,50 @@ class PlayerTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals(1, $player->getResourceCount(\Settlers\Constants::RESOURCE_ORE));
 	}
 
+	/**
+	 * @depends testCreate
+	 */
+	public function testEmptyPieces($player)
+	{
+		$hex = $this->getMockBuilder('\Settlers\Hex')
+			->disableOriginalConstructor()
+			->getMock();
+
+		$this->assertEmpty($player->getPieces());
+	}
+
+	/**
+	 * @depends testCreate
+	 */
+	public function testCheckPieces($player)
+	{
+		$hex = $this->getMockBuilder('\Settlers\Hex')
+			->disableOriginalConstructor()
+			->getMock();
+
+		$edge = new \Settlers\Edge(array(
+			'hex' => $hex
+		));
+
+		$vertex = new \Settlers\Vertex(array(
+			'hex' => $hex
+		));
+
+		$hex->addVertex(0, $vertex);
+		$hex->addEdge(0, $edge);
+
+		$settlement = new \Settlers\MapPiece(array(
+			'player' => $player,
+			'location' => $vertex,
+			'type' => \Settlers\Constants::BUILD_SETTLEMENT
+		));
+
+		$road = new \Settlers\MapPiece(array(
+			'player' => $player,
+			'location' => $edge,
+			'type' => \Settlers\Constants::BUILD_ROAD
+		));
+
+		$this->assertCount(2, $player->getPieces());
+	}
 }

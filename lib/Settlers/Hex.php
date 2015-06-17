@@ -4,7 +4,7 @@ class Hex {
 	public $map;
 	public $x;
 	public $y;
-	private $chit;
+	public $chit;
 	private $terrain;
 	private $vertices = array();
 	private $edges = array();
@@ -29,6 +29,13 @@ class Hex {
 			$this->$key = $value;
 		}
 	}
+
+	public function __toString()
+	{
+		return sprintf("(%d, %d) %s, %d", 
+			$this->x, $this->y, \Settlers\Constants::constantToLabel('TERRAIN', $this->terrain), $this->chit);
+	}
+
 	public function toConsole($params = array())
 	{
 		$options = array_merge(array(

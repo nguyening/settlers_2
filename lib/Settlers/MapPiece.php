@@ -1,12 +1,15 @@
 <?php
 namespace Settlers;
 class MapPiece {
+	private $location;
 	private $type;
 	private $player;
 
 	public function __construct($params = array())
 	{
-		if(!isset($params['type']) || empty($params['player'])) 
+		if(!isset($params['type']) || 
+			empty($params['player']) || 
+			empty($params['location'])) 
 			throw new \Exception('Missing parameter(s).', 1);
 		if(!in_array($params['type'], array(
 			\Settlers\Constants::BUILD_ROAD,
@@ -14,8 +17,18 @@ class MapPiece {
 		) || !$params['player'] instanceof \Settlers\Player) 
 			throw new \Exception('Invalid parameter(s).', 2);
 
+		if(!(($params['location'] instanceof \Settlers\Vertex && 
+			 $params['type'] == \Settlers\Constants::BUILD_SETTLEMENT) ||
+			($params['location'] instanceof \Settlers\Edge && 
+			 $params['type'] == \Settlers\Constants::BUILD_ROAD)))
+			throw new \Exception('Invalid parameter(s).', 2);
+
+		$this->location = $params['location'];
 		$this->type = $params['type'];
 		$this->player = $params['player'];
+
+		$this->player->addPiece($this);
+		$this->location->setPiece($this);
 	}
 
 	public function getType()
@@ -38,5 +51,10 @@ class MapPiece {
 	public function getPlayer()
 	{
 		return $this->player;
+	}
+
+	public function getLocation()
+	{
+		return $this->location;
 	}
 }

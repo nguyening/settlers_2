@@ -16,6 +16,7 @@ class MapPieceTest extends PHPUnit_Framework_TestCase {
 	public function testCreateInvalidParams()
 	{
 		$piece = new \Settlers\MapPiece(array(
+			'location' => 1,
 			'type' => -1,
 			'player' => 1
 		));
@@ -27,7 +28,12 @@ class MapPieceTest extends PHPUnit_Framework_TestCase {
 			->disableOriginalConstructor()
 			->getMock();
 
+		$location = $this->getMockBuilder('\Settlers\Edge')
+			->disableOriginalConstructor()
+			->getMock();
+
 		$piece = new \Settlers\MapPiece(array(
+			'location' => $location,
 			'type' => \Settlers\Constants::BUILD_ROAD,
 			'player' => $player
 		));

@@ -1,15 +1,11 @@
 <?php
 namespace Settlers;
 class Vertex {
-	public $hex;
 	private $piece;
 	private $edges;		// edges that are incident on this vertex
 
 	public function __construct($params = array())
 	{
-		if(empty($params['hex'])) throw new \Exception('Missing parameters.', 1);
-		if(!($params['hex'] instanceof \Settlers\Hex)) throw new \Exception('Invalid parameters.', 2);
-		$this->hex = $params['hex'];
 		$this->edges = array();
 	}
 

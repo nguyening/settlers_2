@@ -1,33 +1,12 @@
 <?php
 class EdgeTest extends PHPUnit_Framework_TestCase {
-	/**
-	 * @expectedException		Exception
-	 * @expectedExceptionCode	1
-	 */
-	public function testCreateMissingParams()
-	{
-		$edge = new \Settlers\Edge();
-	}
-
-	/**
-	 * @expectedException		Exception
-	 * @expectedExceptionCode	2
-	 */
-	public function testCreateInvalidParams()
-	{
-		$edge = new \Settlers\Edge(array('hex' => 1));
-	}
-
-
 	public function testCreateMock()
 	{
 		$hex = $this->getMockBuilder('\Settlers\Hex')
 			->disableOriginalConstructor()
 			->getMock();
 
-		$edge = new \Settlers\Edge(array(
-			'hex' => $hex
-		));
+		$edge = new \Settlers\Edge();
 		return $edge;
 	}
 
@@ -120,6 +99,7 @@ class EdgeTest extends PHPUnit_Framework_TestCase {
 			->getMock();
 
 		$map_piece = new \Settlers\MapPiece(array(
+			'location' => $edge,
 			'player' => $player,
 			'type' => \Settlers\Constants::BUILD_ROAD
 		));

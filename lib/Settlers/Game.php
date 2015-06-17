@@ -61,8 +61,32 @@ class Game {
 	 * GAME LOGIC
 	 */
 
+	public function produceResourcesAtHex($hex)
+	{
+		if(empty($hex)) throw new \Exception('Missing parameter.', 1);
+		if(!$hex instanceof \Settlers\Hex) throw new \Exception('Invalid parameter.', 2);
+
+		$resource = \Settlers\Constants::terrainToResource($hex->getTerrain());
+		$player_pieces = $this->map->getPiecesAtHex($hex);
+		foreach($this->players as $slot => $player) {
+			// If there are no pieces for this player, then continue to the next.
+			if(empty($player_pieces[spl_object_hash($player)])) continue;
+
+			$pieces = $player_pieces[spl_object_hash($player)];
+			if(isset($pieces[\Settlers\Constants::BUILD_SETTLEMENT]))
+				$player->addResources($resource, 1 * count($pieces[\Settlers\Constants::BUILD_SETTLEMENT]));
+				
+			if(isset($pieces[\Settlers\Constants::BUILD_CITY]))
+				$player->addResources($resource, 2 * count($pieces[\Settlers\Constants::BUILD_CITY]));
+		}
+	}
+
 	public function purchase($player, $build_type)
 	{
+		if(empty($player) || !isset($build_type)) throw new \Exception('Missing parameter(s).', 1);
+		if(!$player instanceof \Settlers\Player || !is_int($build_type))
+			throw new \Exception('Invalid parameter(s)', 2);
+
 		foreach(\Settlers\Constants::COST_BUILD[$build_type] as $resource => $amount) {
 			$player->takeResources($resource, $amount);
 		}
@@ -70,6 +94,10 @@ class Game {
 
 	public function canAfford($player, $build_type)
 	{
+		if(empty($player) || !isset($build_type)) throw new \Exception('Missing parameter(s).', 1);
+		if(!$player instanceof \Settlers\Player || !is_int($build_type))
+			throw new \Exception('Invalid parameter(s)', 2);
+
 		foreach(\Settlers\Constants::COST_BUILD[$build_type] as $resource => $amount) {
 			if($player->getResourceCount($resource) < $amount) return false;
 		}

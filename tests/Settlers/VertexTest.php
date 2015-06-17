@@ -1,32 +1,12 @@
 <?php
 class VertexTest extends PHPUnit_Framework_TestCase {
-	/**
-	 * @expectedException		Exception
-	 * @expectedExceptionCode	1
-	 */
-	public function testCreateMissingParams()
-	{
-		$vertex = new \Settlers\Vertex();
-	}
-
-	/**
-	 * @expectedException		Exception
-	 * @expectedExceptionCode	2
-	 */
-	public function testCreateInvalidParams()
-	{
-		$vertex = new \Settlers\Vertex(array('hex' => 1));
-	}
-
 	public function testCreateMock()
 	{
 		$hex = $this->getMockBuilder('\Settlers\Hex')
 			->disableOriginalConstructor()
 			->getMock();
 
-		$vertex = new \Settlers\Vertex(array(
-			'hex' => $hex
-		));
+		$vertex = new \Settlers\Vertex();
 		return $vertex;
 	}
 
@@ -119,6 +99,7 @@ class VertexTest extends PHPUnit_Framework_TestCase {
 			->getMock();
 
 		$map_piece = new \Settlers\MapPiece(array(
+			'location' => $vertex,
 			'player' => $player,
 			'type' => \Settlers\Constants::BUILD_SETTLEMENT
 		));

@@ -107,4 +107,25 @@ abstract class Constants extends BasicEnum {
 			break;
 		}
 	}
+
+	public function constantToLabel($type, $value)
+	{
+		switch($type) {
+			case 'TERRAIN':
+				switch($value) {
+					case Constants::TERRAIN_SEA: return 'TERRAIN_SEA'; break;
+					case Constants::TERRAIN_DESERT: return 'TERRAIN_DESERT'; break;
+					case Constants::TERRAIN_MOUNTAIN: return 'TERRAIN_MOUNTAIN'; break;
+					case Constants::TERRAIN_HILL: return 'TERRAIN_HILL'; break;
+					case Constants::TERRAIN_FIELD: return 'TERRAIN_FIELD'; break;
+					case Constants::TERRAIN_PASTURE: return 'TERRAIN_PASTURE'; break;
+					case Constants::TERRAIN_FOREST: return 'TERRAIN_FOREST'; break;
+				}
+			break;
+
+			default:
+				return '';
+			break;
+		}
+	}
 }

@@ -102,6 +102,54 @@ class Map {
 	 * MAP RELATION LOGICS
 	 */
 
+	public function getProducingHexes($roll)
+	{
+		$hexes = array();
+
+		foreach($this->hexes as $r => $row) {
+			foreach($row as $c => $hex) {
+				if($hex->chit == $roll) {
+					$hexes[] = $hex;
+				}
+			}
+		}
+
+		return $hexes;
+	}
+
+	public function getPiecesAtHex($hex)
+	{
+		$player_pieces = array();
+		// Using a closure here since we have a shared process.
+		// Note, passing $player_pieces by reference to modify it.
+		$addPiece = function ($piece) use (&$player_pieces) {
+			$player_id = spl_object_hash($piece->getPlayer());
+			$type = $piece->getType();
+
+			if(empty($player_pieces[$player_id]))
+				$player_pieces[$player_id] = array();
+
+			if(empty($player_pieces[$player_id][$type]))
+				$player_pieces[$player_id][$type] = array();
+
+			$player_pieces[$player_id][$type][] = $piece;
+		};
+
+		for($i = 0; $i < 6; $i++) {
+			$vertex = $hex->getVertex($i);
+			$edge = $hex->getEdge($i);
+
+			if($this->isVertexOccupied($vertex)) {
+				$addPiece($vertex->getPiece());
+			}
+			if($this->isEdgeOccupied($edge)) {
+				$addPiece($edge->getPiece());
+			}
+		}
+
+		return $player_pieces;
+	}
+
 	private function getAdjacentVertices($vertex)
 	{
 		if(empty($vertex)) throw new \Exception('Missing parameter.', 1);
@@ -479,9 +527,7 @@ class Map {
 			if($vertex == null && $this->getCwHex($hex, $i) != null)
 				$vertex = $this->getCwHexVertex($hex, $i);
 			if($vertex == null) {
-				$vertex = new \Settlers\Vertex(array(
-					'hex' => $hex
-				));
+				$vertex = new \Settlers\Vertex();
 			}
 			$hex->addVertex($i, $vertex);
 
@@ -489,9 +535,7 @@ class Map {
 			if($this->getCwHex($hex, $i) != null)
 				$edge = $this->getCwHexEdge($hex, $i);
 			if($edge == null) {
-				$edge = new \Settlers\Edge(array(
-					'hex' => $hex
-				));
+				$edge = new \Settlers\Edge();
 			}
 			$hex->addEdge($i, $edge);
 		}
@@ -655,10 +699,10 @@ class Map {
 		}
 		else {
 			$piece = new \Settlers\MapPiece(array(
-				'type' => $type,
-				'player' => $player
+				'player' => $player,
+				'location' => $location,
+				'type' => $type
 			));
-			$location->setPiece($piece);
 		}
 	}
 }
