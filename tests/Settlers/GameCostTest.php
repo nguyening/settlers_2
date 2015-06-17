@@ -65,4 +65,29 @@ class GameCostTest extends PHPUnit_Framework_TestCase {
 				$this->assertFalse($game->canAfford($player, $build_type));
 		}
 	}
+
+	public function testPurchases()
+	{
+		$game = $this->game;
+		$player = $this->player;
+
+		$bank = array(
+			\Settlers\Constants::RESOURCE_ORE => 4,
+			\Settlers\Constants::RESOURCE_BRICK => 2,
+			\Settlers\Constants::RESOURCE_WHEAT => 4,
+			\Settlers\Constants::RESOURCE_SHEEP => 2,
+			\Settlers\Constants::RESOURCE_WOOD => 2
+		);
+		foreach($bank as $resource => $count) {
+			$player->addResources($resource, $count);
+		}
+
+		foreach(array_keys(\Settlers\Constants::COST_BUILD) as $idx => $build_type) {
+			$game->purchase($player, $build_type);
+		}
+
+		foreach(array_keys($bank) as $idx => $resource) {
+			$this->assertEquals(0, $player->getResourceCount($resource));
+		}
+	}
 }
