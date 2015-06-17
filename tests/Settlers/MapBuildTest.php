@@ -217,6 +217,41 @@ class MapBuildTest extends PHPUnit_Framework_TestCase {
 		);
 	}
 
+	public function testAdjacentOccupiedVertex()
+	{
+		$map = $this->map;
+		$player = $this->player;
+		$hexes = $this->hexes;
+		$p2 = $this->getMockBuilder('\Settlers\Player')
+			->disableOriginalConstructor()
+			->getMock();
+
+		$isAdjacentVerticesOccupied = $this->map_reflection->getMethod('isAdjacentVerticesOccupied');
+		$isAdjacentVerticesOccupied->setAccessible(true);
+
+		$getAdjacentVertices = $this->map_reflection->getMethod('getAdjacentVertices');
+		$getAdjacentVertices->setAccessible(true);
+
+		$v1 = $hexes[0][0]->getVertex(0);
+		$v2 = $hexes[0][0]->getVertex(2);
+
+		$this->placePiece->invokeArgs($map, 
+			array($this->player, $v1, \Settlers\Constants::BUILD_SETTLEMENT)
+		);
+
+		$this->assertFalse($isAdjacentVerticesOccupied->invokeArgs($map, array($v1)));
+		foreach($getAdjacentVertices->invokeArgs($this->map, array($v1)) as $idx => $neighbor) {
+			$this->assertTrue($isAdjacentVerticesOccupied->invokeArgs($map, array($neighbor)));
+		}
+
+		$this->placePiece->invokeArgs($map,
+			array($p2, $hexes[0][0]->getEdge(1), \Settlers\Constants::BUILD_ROAD)
+		);
+		$this->assertTrue($this->canBuildPiece->invokeArgs($map, 
+			array($p2, $v2, \Settlers\Constants::BUILD_SETTLEMENT))
+		);
+	}
+
 	public function testBuildDistance()
 	{
 		$map = $this->map;
@@ -251,6 +286,7 @@ class MapBuildTest extends PHPUnit_Framework_TestCase {
 			$this->assertFalse($canBuildPiece->invokeArgs($map, 
 				array($player, $neighbor, \Settlers\Constants::BUILD_SETTLEMENT))
 			);
+
 		}
 
 		for($i = 0; $i < 6; $i++) {

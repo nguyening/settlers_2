@@ -66,7 +66,7 @@ class Map {
 	 * MAP RELATION LOGICS
 	 */
 
-	public function getAdjacentVertices($vertex)
+	private function getAdjacentVertices($vertex)
 	{
 		if(empty($vertex)) throw new \Exception('Missing parameter.', 1);
 		if(!$vertex instanceof \Settlers\Vertex) throw new \Exception('Invalid parameter.', 2);
@@ -86,7 +86,7 @@ class Map {
 		return $neighbors;
 	}
 
-	public function getAdjacentEdges($edge)
+	private function getAdjacentEdges($edge)
 	{
 		if(empty($edge)) throw new \Exception('Missing parameter.', 1);
 		if(!$edge instanceof \Settlers\Edge) throw new \Exception('Invalid parameter.', 2);
@@ -107,7 +107,21 @@ class Map {
 		return $neighbors;
 	}
 
-	public function isAdjacentEdge($e1, $e2)
+	private function isAdjacentVerticesOccupied($vertex)
+	{
+		if(empty($vertex)) throw new \Exception('Missing parameter.', 1);
+		if(!$vertex instanceof \Settlers\Vertex) throw new \Exception('Invalid parameter.', 2);
+
+		$vertices = $this->getAdjacentVertices($vertex);
+		foreach($vertices as $idx => $neighbor) {
+			if($this->isVertexOccupied($neighbor))
+				return true;
+		}
+
+		return false;
+	}
+
+	private function isAdjacentEdge($e1, $e2)
 	{
 		if(empty($e1) || empty($e2)) throw new \Exception('Missing parameter(s).', 1);
 		if(!$e1 instanceof \Settlers\Edge ||
@@ -128,7 +142,7 @@ class Map {
 		return false;
 	}
 
-	public function isAdjacentVertex($v1, $v2)
+	private function isAdjacentVertex($v1, $v2)
 	{
 		if(empty($v1) || empty($v2)) throw new \Exception('Missing parameter(s).', 1);
 		if(!$v1 instanceof \Settlers\Vertex ||
@@ -147,7 +161,7 @@ class Map {
 		return false;
 	}
 
-	public function isBoundaryEdge($edge)
+	private function isBoundaryEdge($edge)
 	{
 		if(empty($edge)) throw new \Exception('Missing parameter.', 1);
 		if(!$edge instanceof \Settlers\Edge) throw new \Exception('Invalid parameter.', 2);
@@ -172,7 +186,7 @@ class Map {
 		return $this->isBoundaryEdge($vertex->getEdge(1));
 	}
 
-	public function isVertexOccupied($vertex)
+	private function isVertexOccupied($vertex)
 	{
 		if(empty($vertex)) throw new \Exception('Missing parameter(s).', 1);
 		if(!$vertex instanceof \Settlers\Vertex) throw new \Exception('Invalid parameter(s).', 2);
@@ -180,7 +194,7 @@ class Map {
 		return ($vertex->getPiece() != null);
 	}
 
-	public function isEdgeOccupied($edge)
+	private function isEdgeOccupied($edge)
 	{
 		if(empty($edge)) throw new \Exception('Missing parameter(s).', 1);
 		if(!$edge instanceof \Settlers\Edge) throw new \Exception('Invalid parameter(s).', 2);
@@ -188,7 +202,7 @@ class Map {
 		return ($edge->getPiece() != null);
 	}
 
-	public function isVertexOccupiedByPlayer($vertex, $player)
+	private function isVertexOccupiedByPlayer($vertex, $player)
 	{
 		if(empty($vertex) || empty($player)) throw new \Exception('Missing parameter(s).', 1);
 		if(!$vertex instanceof \Settlers\Vertex ||
@@ -200,7 +214,7 @@ class Map {
 		return false;
 	}
 
-	public function isEdgeOccupiedByPlayer($edge, $player)
+	private function isEdgeOccupiedByPlayer($edge, $player)
 	{
 		if(empty($edge) || empty($player)) throw new \Exception('Missing parameter(s).', 1);
 		if(!$edge instanceof \Settlers\Edge ||
@@ -573,11 +587,8 @@ class Map {
 					return false;
 
 				// All settlements must be 1 vertex away from other vertices
-				$vertices = $this->getAdjacentVertices($location);
-				foreach($vertices as $idx => $vertex) {
-					if($this->isVertexOccupied($vertex))
-						return false;
-				}
+				if($this->isAdjacentVerticesOccupied($location))
+					return false;
 
 				// All settlements must be connected to a road that the player owns
 				foreach(array($location->getEdge(0), $location->getEdge(1), $location->getEdge(2))
