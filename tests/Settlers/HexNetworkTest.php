@@ -236,29 +236,59 @@ class HexNetworkTest extends PHPUnit_Framework_TestCase {
 		);
 	}
 
+	public function dataVertexOppositeEdges()
+	{
+		return array(
+			array(array(0, 0), 0, array(0, -1), 4),
+			array(array(0, 0), 0, array(-1, 0), 1),
+			array(array(0, 0), 1, array(0, -1), 2),
+			array(array(0, 0), 1, array(1, -1), 5),
+			array(array(0, 0), 2, array(1, -1), 3),
+			array(array(0, 0), 2, array(1, 0), 0),
+
+			array(array(1, -5), 0, array(0, -5), 1),
+			array(array(0, 5), 4, null, null),
+			array(array(-4, -1), 0, null, null)
+		);
+	}
+
 	/**
-	 * @dataProvider dataVertexEdges
+	 * @dataProvider dataVertexOppositeEdges
 	 */
-	public function testGetVertexOppositeEdge($hex, $vertex)
+	public function testGetVertexOppositeEdge($h1, $vertex, $h2, $edge)
 	{
 		$map = $this->map;
 		$map_reflection = $this->map_reflection;
 
 		$getHex = $map_reflection->getMethod('getHex');
 		$getHex->setAccessible(true);
-		$hex = $getHex->invokeArgs($map, array($hex[0], $hex[1]));
 
 		$getVertexOppositeEdge = $map_reflection->getMethod('getVertexOppositeEdge');
 		$getVertexOppositeEdge->setAccessible(true);
-
+		
 		$getCwHex = $map_reflection->getMethod('getCwHex');
 		$getCwHex->setAccessible(true);
 
-		if($getCwHex->invokeArgs($map, array($hex, $vertex)) != null) {
+		$hex = $getHex->invokeArgs($map, array($h1[0], $h1[1]));
+
+		// The opposite edge is not contained within the hex's edges
+		for($i = 0; $i < 6; $i++) {
+			// print_r("\n".$hex->getEdge($i)." is not ".$getVertexOppositeEdge->invokeArgs($map, array($hex, $vertex)));
 			$this->assertNotSame(
-				$hex->getEdge($vertex),
+				$hex->getEdge($i),
 				$getVertexOppositeEdge->invokeArgs($map, array($hex, $vertex))
-			);		
+			);
+		}
+
+		if(!empty($h2)) {
+			$neighbor = $getHex->invokeArgs($map, array($h2[0], $h2[1]));
+			$this->assertSame(
+				$neighbor->getEdge($edge),
+				$getVertexOppositeEdge->invokeArgs($map, array($hex, $vertex))
+			);
+		}
+		else {
+			$this->assertNull($getVertexOppositeEdge->invokeArgs($map, array($hex, $vertex)));
 		}
 	}
 
@@ -288,6 +318,36 @@ class HexNetworkTest extends PHPUnit_Framework_TestCase {
 		$this->assertNotSame($ccw_edge, $cw_edge);
 		$this->assertNotSame($ccw_edge, $op_edge);
 		$this->assertNotSame($cw_edge, $op_edge);
+	}
+
+
+	public function dataSharedEdges()
+	{
+		return array(
+			array(array(0,0), 0, array(0, -1), 3),
+			array(array(0,0), 1, array(1, -1), 4),
+			array(array(0,0), 2, array(1, 0), 5),
+			array(array(0,0), 3, array(0, 1), 0),
+			array(array(0,0), 4, array(-1, 1), 1),
+			array(array(0,0), 5, array(-1, 0), 2),
+		);
+	}
+
+	/**
+	 * @dataProvider dataSharedEdges
+	 */
+	public function testSharedEdges($h1, $e1, $h2, $e2)
+	{
+		$getHex = $this->map_reflection->getMethod('getHex');
+		$getHex->setAccessible(true);
+
+		$hex = $getHex->invokeArgs($this->map, array($h1[0], $h1[1]));
+		$neighbor = $getHex->invokeArgs($this->map, array($h2[0], $h2[1]));
+
+		$this->assertSame(
+			$hex->getEdge($e1),
+			$neighbor->getEdge($e2)
+		);
 	}
 
 	/**

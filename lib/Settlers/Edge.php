@@ -13,6 +13,16 @@ class Edge {
 		$this->vertices = array();
 	}
 
+	public function __toString()
+	{
+		for($i = 0; $i < 6; $i++) {
+			if(spl_object_hash($this->hex->getEdge($i)) == 
+				spl_object_hash($this))
+				return sprintf("(%d, %d, #%d) [%s==%s]", 
+					$this->hex->x, $this->hex->y, $i, $this->vertices[0], $this->vertices[1]);
+		}
+	}
+
 	public function addVertex($idx, $vertex)
 	{
 		if(!(is_int($idx) && $idx >= 0 && $idx < 2) ||

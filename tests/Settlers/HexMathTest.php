@@ -28,18 +28,15 @@ class HexMathTest extends PHPUnit_Framework_TestCase {
 
 		$prop = $map_reflection->getProperty('hexes');
 		$prop->setAccessible(true);
+		$hexes = $prop->getValue($map);
 
 		$count = 0;
-		for($y = -1 * $map_size; $y <= $map_size; $y++) {
-			$count += count($prop->getValue($map)[$y]);
+		foreach($hexes as $r => $row) {
+			$count += count($row);
 		}
 
-		// I'll figure out the math property for this..
-		$expected = 0;
-		for($r = $map_size; $r > 0; $r--) {
-			$expected += 2 * $map_size - ($map_size - $r);
-		}
-		$this->assertEquals(2 * $expected + (2 * $map_size + 1), $count);
+		$radius = $map_size + 1;
+		$this->assertEquals($radius * ($radius - 1) * 3 + 1, $count);
 	}
 
 	public function testGetInvalidHex()

@@ -194,15 +194,36 @@ class MapBuildTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals(\Settlers\Constants::BUILD_CITY, $vertex->getPiece()->getType());
 	}
 
-	public function testSettlementConnection()
+	public function dataSettlementConnection()
+	{
+		return array(
+			array(array(0,0,0), array(0,0,0)),
+			array(array(0,0,0), array(0,-1,3)),
+			array(array(0,0,0), array(0,0,5)),
+			array(array(0,0,0), array(0,-1,4)),
+
+			array(array(0,-2,0), array(0,-2,0)),
+			array(array(0,-2,0), array(0,-2,5)),
+
+			array(array(2,-2,0), array(2,-2,0)),
+			array(array(2,-2,0), array(2,-2,5)),
+			array(array(2,-2,0), array(1,-2,2)),
+			array(array(2,-2,0), array(1,-2,1))
+		);
+	}
+
+	/**
+	 * @dataProvider dataSettlementConnection
+	 */
+	public function testSettlementConnection($v_coords, $e_coords)
 	{
 		$map = $this->map;
 		$player = $this->player;
 		$hexes = $this->hexes;
 		$canBuildPiece = $this->canBuildPiece;
 
-		$vertex = $hexes[0][0]->getVertex(0);
-		$edge = $hexes[0][0]->getEdge(0);
+		$vertex = $hexes[$v_coords[1]][$v_coords[0]]->getVertex($v_coords[2]);
+		$edge = $hexes[$e_coords[1]][$e_coords[0]]->getEdge($e_coords[2]);
 
 		$this->assertFalse($canBuildPiece->invokeArgs($map,
 			array($player, $vertex, \Settlers\Constants::BUILD_SETTLEMENT))

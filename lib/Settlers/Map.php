@@ -62,6 +62,42 @@ class Map {
 		return $output;
 	}
 
+	public function toJSON()
+	{
+		$getHex = $this->map_reflection->getMethod('getHex');
+		$getHex->setAccessible(true);
+		$hex = $getHex->invokeArgs($this->map, array(0, 0));
+	
+		$data = array();
+		for($y = -2; $y < 3; $y++) {
+			for($x = -2; $x < 3; $x++) {
+				if(!empty($hex = $getHex->invokeArgs($this->map, array($x, $y)))) {
+					$entry = array('x' => $x, 'y' => $y, 'vertices' => array(), 'edges' => array());
+
+					for($i = 0; $i < 6; $i++) {
+						$vertex = $hex->getVertex($i);
+						$edge = $hex->getEdge($i);
+
+						$endpts = array($edge->getVertex(0), $edge->getVertex(1));
+						$incident = array($vertex->getEdge(0), $vertex->getEdge(1), $vertex->getEdge(2));
+						
+						$endpts = array_map(function($i) { return spl_object_hash($i); }, $endpts);
+						$incident = array_map(function($i) { if(empty($i)) return ""; return spl_object_hash($i); }, $incident);
+
+						$entry['vertices'][$i] = $incident;
+						$entry['edges'][$i] = $endpts;
+					}
+
+					if(empty($data[$y]))
+						$data[$y] = array();
+					$data[$y][$x] = $entry;
+				}
+			}
+		}
+
+		return json_encode($data);
+	}
+
 	/**
 	 * MAP RELATION LOGICS
 	 */
@@ -282,7 +318,7 @@ class Map {
 		return $this->getHexInDirection($hex, ($idx + 3) % 6);
 	}
 
-	private function getCwHex($hex, $idx)
+	public function getCwHex($hex, $idx)
 	{
 		return $this->getHexInDirection($hex, ($idx + 4) % 6);
 	}
@@ -322,9 +358,13 @@ class Map {
 	public function getVertexOppositeEdge($hex, $idx)
 	{
 		// We choose to use CW hex to grab the opposite edge, but CCW also shares this edge.
-		if($this->getCwHex($hex, $idx) == null)
-			return null;
-		return $this->getCwHex($hex, $idx)->getEdge(($idx + 4) % 6);
+		if(!empty($neighbor = $this->getCwHex($hex, $idx)))
+			return $neighbor->getEdge(($idx + 4) % 6);
+		if(!empty($neighbor = $this->getCcwHex($hex, $idx)))
+			return $neighbor->getEdge(($idx + 1) % 6);
+
+		// If this vertex has no CW or CCW hex neighbor, then it has no opposite edge
+		return null;
 	}
 
 	public function getEdgeOppositeVertex($hex, $idx)
@@ -336,26 +376,57 @@ class Map {
 	 * MAP PLACEMENT LOGICS
 	 */
 
+	private function placeHex($x, $y)
+	{
+		if(!isset($x) || !isset($y)) throw new \Exception('Missing parameter(s)', 1);
+		if(!is_int($x) || !is_int($y)) throw new \Exception('Invalid parameter(s)', 2);
+		if(empty($this->hexes[$y])) $this->hexes[$y] = array();
+
+		$this->hexes[$y][$x] = new \Settlers\Hex(array(
+			'x' => $x,
+			'y' => $y
+		));		
+	}
+
 	private function constructHexes()
 	{
 		// Using a hashmap to map coordinates to hexes,
 		// This helps to save space as opposed to using an array.
 		$this->hexes = array();
 
-		for($y = -1 * $this->map_size; $y <= $this->map_size; $y++) {
-			// Mind is pooping, I'll figure out the math property to shape this later.
-			for(
-				$x = ($y < 0 ? -1 * ($this->map_size - abs($y)) : -1 * $this->map_size); 
-				$x <= ($y > 0 ? ($this->map_size - $y) : $this->map_size); 
-				$x++) {
-				if(empty($this->hexes[$y])) $this->hexes[$y][] = array();
-
-				$this->hexes[$y][$x] = new \Settlers\Hex(array(
-					'x' => $x,
-					'y' => $y
-				));
-			}
+		// Method to create honeycomb map of hexagons: http://stackoverflow.com/a/25684405
+		$this->placeHex(0, 0);
+		// $map_size in this case is 1 more than a radius, since we count the center tile (oops).
+		$radius = $this->map_size + 1;
+		for($r = 0; $r > -1 * $radius; $r--) {
+			for($q = -1 * $r - 1; $q > -1 * $radius - $r; $q--)
+				$this->placeHex($q, $r);
 		}
+
+	    for ($r = 1; $r < $radius; $r++) {
+	        for ($q = 0; $q > -1 * $radius; $q--)
+	         	$this->placeHex($q, $r);   
+	    }
+
+	    for ($q = 1; $q < $radius; $q++) {
+	        for ($r = -1 * $q; $r < $radius - $q; $r++)
+	            $this->placeHex($q, $r);
+	    }
+
+		// for($y = -1 * $this->map_size; $y <= $this->map_size; $y++) {
+		// 	// Mind is pooping, I'll figure out the math property to shape this later.
+		// 	for(
+		// 		$x = ($y < 0 ? -1 * ($this->map_size - abs($y)) : -1 * $this->map_size); 
+		// 		$x <= ($y > 0 ? ($this->map_size - $y) : $this->map_size); 
+		// 		$x++) {
+		// 		if(empty($this->hexes[$y])) $this->hexes[$y][] = array();
+
+		// 		$this->hexes[$y][$x] = new \Settlers\Hex(array(
+		// 			'x' => $x,
+		// 			'y' => $y
+		// 		));
+		// 	}
+		// }
 	}
 
 	private function constructNetwork()
@@ -419,7 +490,8 @@ class Map {
 
 			$vertex->addEdge(0, $e1);
 			$vertex->addEdge(1, $e2);
-			if($e3 != null) $vertex->addEdge(2, $e3); // border hexes don't have neighboring edges
+			// some boundary vertices don't have neighboring edges
+			if(!empty($e3)) $vertex->addEdge(2, $e3);
 
 			// connect edge to vertices
 			$v1 = $vertex;
