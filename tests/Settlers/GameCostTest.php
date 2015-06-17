@@ -1,5 +1,5 @@
 <?php
-class CostTest extends PHPUnit_Framework_TestCase {
+class GameCostTest extends PHPUnit_Framework_TestCase {
 	protected $player;
 	protected $game;
 
@@ -28,7 +28,7 @@ class CostTest extends PHPUnit_Framework_TestCase {
 		$player = $this->player;
 
 		foreach(array_keys(\Settlers\Constants::COST_BUILD) as $i => $build_type) {
-			$this->assertFalse($game->checkAffordBuild($player, $build_type));
+			$this->assertFalse($game->canAfford($player, $build_type));
 		}
 	}
 
@@ -44,7 +44,7 @@ class CostTest extends PHPUnit_Framework_TestCase {
 		}
 
 		foreach(array_keys(\Settlers\Constants::COST_BUILD) as $i => $build_type) {
-			$this->assertTrue($game->checkAffordBuild($player, $build_type));
+			$this->assertTrue($game->canAfford($player, $build_type));
 		}
 	}
 
@@ -60,9 +60,9 @@ class CostTest extends PHPUnit_Framework_TestCase {
 
 		foreach(array_keys(\Settlers\Constants::COST_BUILD) as $i => $build_type) {
 			if($build_type == \Settlers\Constants::BUILD_ROAD)
-				$this->assertTrue($game->checkAffordBuild($player, $build_type));
+				$this->assertTrue($game->canAfford($player, $build_type));
 			else
-				$this->assertFalse($game->checkAffordBuild($player, $build_type));
+				$this->assertFalse($game->canAfford($player, $build_type));
 		}
 	}
 }

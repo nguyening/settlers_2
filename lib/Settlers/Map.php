@@ -143,7 +143,7 @@ class Map {
 		return $neighbors;
 	}
 
-	private function isAdjacentVerticesOccupied($vertex)
+	public function isAdjacentVerticesOccupied($vertex)
 	{
 		if(empty($vertex)) throw new \Exception('Missing parameter.', 1);
 		if(!$vertex instanceof \Settlers\Vertex) throw new \Exception('Invalid parameter.', 2);
@@ -156,6 +156,80 @@ class Map {
 
 		return false;
 	}
+
+	public function isAdjacentEdgesOccupiedByPlayer($edge, $player)
+	{
+		foreach($this->getAdjacentEdges($edge) as $idx => $neighbor) {
+			if($this->isEdgeOccupiedByPlayer($neighbor, $player))
+				return true;
+		}
+
+		return false;
+	}
+
+	public function isEndpointsOccupiedByPlayer($edge, $player)
+	{
+		foreach(array($edge->getVertex(0), $edge->getVertex(1))
+			as $idx => $vertex) {
+			if($this->isVertexOccupiedByPlayer($vertex, $player))
+				return true;
+		}
+
+		return false;
+	}
+
+	public function isIncidentEdgesOccupiedByPlayer($vertex, $player)
+	{
+		foreach(array($vertex->getEdge(0), $vertex->getEdge(1), $vertex->getEdge(2))
+			as $idx => $edge) {
+			if(empty($edge)) continue;
+			if($this->isEdgeOccupiedByPlayer($edge, $player)) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	public function isVertexOccupied($vertex)
+	{
+		if(empty($vertex)) throw new \Exception('Missing parameter(s).', 1);
+		if(!$vertex instanceof \Settlers\Vertex) throw new \Exception('Invalid parameter(s).', 2);
+
+		return ($vertex->getPiece() != null);
+	}
+
+	public function isEdgeOccupied($edge)
+	{
+		if(empty($edge)) throw new \Exception('Missing parameter(s).', 1);
+		if(!$edge instanceof \Settlers\Edge) throw new \Exception('Invalid parameter(s).', 2);
+
+		return ($edge->getPiece() != null);
+	}
+
+	public function isVertexOccupiedByPlayer($vertex, $player)
+	{
+		if(empty($vertex) || empty($player)) throw new \Exception('Missing parameter(s).', 1);
+		if(!$vertex instanceof \Settlers\Vertex ||
+			!$player instanceof \Settlers\Player) throw new \Exception('Invalid parameter(s).', 2);
+
+		if($this->isVertexOccupied($vertex) &&
+			spl_object_hash($vertex->getPiece()->getPlayer()) == spl_object_hash($player))
+			return true;
+		return false;
+	}
+
+	public function isEdgeOccupiedByPlayer($edge, $player)
+	{
+		if(empty($edge) || empty($player)) throw new \Exception('Missing parameter(s).', 1);
+		if(!$edge instanceof \Settlers\Edge ||
+			!$player instanceof \Settlers\Player) throw new \Exception('Invalid parameter(s).', 2);
+
+		if($this->isEdgeOccupied($edge) &&
+			spl_object_hash($edge->getPiece()->getPlayer()) == spl_object_hash($player))
+			return true;
+		return false;
+	}	
 
 	private function isAdjacentEdge($e1, $e2)
 	{
@@ -220,46 +294,6 @@ class Map {
 		// In the (2) case, either edge is a boundary edge
 		// In the (3) case, the CCW edge is always a boundary edge
 		return $this->isBoundaryEdge($vertex->getEdge(1));
-	}
-
-	private function isVertexOccupied($vertex)
-	{
-		if(empty($vertex)) throw new \Exception('Missing parameter(s).', 1);
-		if(!$vertex instanceof \Settlers\Vertex) throw new \Exception('Invalid parameter(s).', 2);
-
-		return ($vertex->getPiece() != null);
-	}
-
-	private function isEdgeOccupied($edge)
-	{
-		if(empty($edge)) throw new \Exception('Missing parameter(s).', 1);
-		if(!$edge instanceof \Settlers\Edge) throw new \Exception('Invalid parameter(s).', 2);
-
-		return ($edge->getPiece() != null);
-	}
-
-	private function isVertexOccupiedByPlayer($vertex, $player)
-	{
-		if(empty($vertex) || empty($player)) throw new \Exception('Missing parameter(s).', 1);
-		if(!$vertex instanceof \Settlers\Vertex ||
-			!$player instanceof \Settlers\Player) throw new \Exception('Invalid parameter(s).', 2);
-
-		if($this->isVertexOccupied($vertex) &&
-			spl_object_hash($vertex->getPiece()->getPlayer()) == spl_object_hash($player))
-			return true;
-		return false;
-	}
-
-	private function isEdgeOccupiedByPlayer($edge, $player)
-	{
-		if(empty($edge) || empty($player)) throw new \Exception('Missing parameter(s).', 1);
-		if(!$edge instanceof \Settlers\Edge ||
-			!$player instanceof \Settlers\Player) throw new \Exception('Invalid parameter(s).', 2);
-
-		if($this->isEdgeOccupied($edge) &&
-			spl_object_hash($edge->getPiece()->getPlayer()) == spl_object_hash($player))
-			return true;
-		return false;
 	}
 
 	/**
@@ -373,7 +407,7 @@ class Map {
 	}
 
 	/**
-	 * MAP PLACEMENT LOGICS
+	 * MAP CREATION AND MODIFICATION
 	 */
 
 	private function placeHex($x, $y)
@@ -395,9 +429,10 @@ class Map {
 		$this->hexes = array();
 
 		// Method to create honeycomb map of hexagons: http://stackoverflow.com/a/25684405
-		$this->placeHex(0, 0);
 		// $map_size in this case is 1 more than a radius, since we count the center tile (oops).
 		$radius = $this->map_size + 1;
+		$this->placeHex(0, 0);
+		
 		for($r = 0; $r > -1 * $radius; $r--) {
 			for($q = -1 * $r - 1; $q > -1 * $radius - $r; $q--)
 				$this->placeHex($q, $r);
@@ -412,21 +447,6 @@ class Map {
 	        for ($r = -1 * $q; $r < $radius - $q; $r++)
 	            $this->placeHex($q, $r);
 	    }
-
-		// for($y = -1 * $this->map_size; $y <= $this->map_size; $y++) {
-		// 	// Mind is pooping, I'll figure out the math property to shape this later.
-		// 	for(
-		// 		$x = ($y < 0 ? -1 * ($this->map_size - abs($y)) : -1 * $this->map_size); 
-		// 		$x <= ($y > 0 ? ($this->map_size - $y) : $this->map_size); 
-		// 		$x++) {
-		// 		if(empty($this->hexes[$y])) $this->hexes[$y][] = array();
-
-		// 		$this->hexes[$y][$x] = new \Settlers\Hex(array(
-		// 			'x' => $x,
-		// 			'y' => $y
-		// 		));
-		// 	}
-		// }
 	}
 
 	private function constructNetwork()
@@ -620,7 +640,7 @@ class Map {
 		return $this->baron;
 	}
 
-	public function buildPiece($player, $location, $type)
+	public function placePiece($player, $location, $type)
 	{
 		if(empty($player) ||
 			empty($location) || 
@@ -629,84 +649,9 @@ class Map {
 			!$player instanceof \Settlers\Player)
 			throw new \Exception('Invalid parameter(s).', 2);
 
-		if($this->canBuildPiece($player, $location, $type))
-			$this->placePiece($player, $location, $type);
-		else
-			throw new \Exception('Invalid action.', 3);
-	}
-
-	public function canBuildPiece($player, $location, $type)
-	{
-		if(empty($player) ||
-			empty($location) || 
-			!isset($type)) throw new \Exception('Missing parameter(s).', 1);
-		if(!($location instanceof \Settlers\Vertex || $location instanceof \Settlers\Edge) ||
-			!$player instanceof \Settlers\Player)
-			throw new \Exception('Invalid parameter(s).', 2);
-
-		if($location instanceof \Settlers\Vertex) {
-			if($type == \Settlers\Constants::BUILD_CITY) {
-				// Cities can only be built on current settlements owned by the player
-				if($this->isVertexOccupiedByPlayer($location, $player) &&
-					$location->getPiece()->getType() == \Settlers\Constants::BUILD_SETTLEMENT)
-					return true;
-
-				return false;
-			}
-			elseif($type == \Settlers\Constants::BUILD_SETTLEMENT) {
-				// A player cannot build on an occupied vertex.
-				if($this->isVertexOccupied($location))
-					return false;
-
-				// All settlements must be 1 vertex away from other vertices
-				if($this->isAdjacentVerticesOccupied($location))
-					return false;
-
-				// All settlements must be connected to a road that the player owns
-				foreach(array($location->getEdge(0), $location->getEdge(1), $location->getEdge(2))
-					as $idx => $edge) {
-					if(empty($edge)) continue;
-					if($this->isEdgeOccupiedByPlayer($edge, $player)) {
-						return true;
-					}
-				}
-
-				return false;
-			}
-		}
-		elseif($location instanceof \Settlers\Edge && 
-			!$this->isEdgeOccupied($location) &&
-			$type == \Settlers\Constants::BUILD_ROAD) {
-
-			// Roads must be connected to other roads owned by the player
-			foreach($this->getAdjacentEdges($location) as $idx => $edge) {
-				if($this->isEdgeOccupiedByPlayer($edge, $player))
-					return true;
-			}
-			// Or, roads must be connected to a settlement/city owned by the player
-			foreach(array($location->getVertex(0), $location->getVertex(1))
-				as $idx => $vertex) {
-				if($this->isVertexOccupiedByPlayer($vertex, $player))
-					return true;
-			}
-
-			return false;
-		}
-
-		return false;
-	}
-
-	private function placePiece($player, $location, $type)
-	{
-		if(empty($player) ||
-			empty($location) || 
-			!isset($type)) throw new \Exception('Missing parameter(s).', 1);
-		if(!($location instanceof \Settlers\Vertex || $location instanceof \Settlers\Edge) ||
-			!$player instanceof \Settlers\Player)
-			throw new \Exception('Invalid parameter(s).', 2);
-
-		if($type == \Settlers\Constants::BUILD_CITY) {
-			$location->getPiece()->setType($type);
+		if($type == \Settlers\Constants::BUILD_CITY &&
+			!empty($piece = $location->getPiece())) {
+			$piece->setType($type);
 		}
 		else {
 			$piece = new \Settlers\MapPiece(array(

@@ -61,11 +61,82 @@ class Game {
 	 * GAME LOGIC
 	 */
 
-	public function checkAffordBuild($player, $build_type)
+	public function purchase($player, $build_type)
+	{
+		foreach(\Settlers\Constants::COST_BUILD[$build_type] as $resource => $amount) {
+			$player->takeResources($resource, $amount);
+		}
+	}
+
+	public function canAfford($player, $build_type)
 	{
 		foreach(\Settlers\Constants::COST_BUILD[$build_type] as $resource => $amount) {
 			if($player->getResourceCount($resource) < $amount) return false;
 		}
 		return true;
+	}
+
+	public function buildPiece($player, $location, $type)
+	{
+		if(empty($player) ||
+			empty($location) || 
+			!isset($type)) throw new \Exception('Missing parameter(s).', 1);
+		if(!($location instanceof \Settlers\Vertex || $location instanceof \Settlers\Edge) ||
+			!$player instanceof \Settlers\Player)
+			throw new \Exception('Invalid parameter(s).', 2);
+
+		$this->map->placePiece($player, $location, $type);
+	}
+
+	public function canBuildPiece($player, $location, $type)
+	{
+		if(empty($player) ||
+			empty($location) || 
+			!isset($type)) throw new \Exception('Missing parameter(s).', 1);
+		if(!($location instanceof \Settlers\Vertex || $location instanceof \Settlers\Edge) ||
+			!$player instanceof \Settlers\Player)
+			throw new \Exception('Invalid parameter(s).', 2);
+
+		if($location instanceof \Settlers\Vertex) {
+			if($type == \Settlers\Constants::BUILD_CITY) {
+				// Cities can only be built on current settlements owned by the player
+				if($this->map->isVertexOccupiedByPlayer($location, $player) &&
+					$location->getPiece()->getType() == \Settlers\Constants::BUILD_SETTLEMENT)
+					return true;
+
+				return false;
+			}
+			elseif($type == \Settlers\Constants::BUILD_SETTLEMENT) {
+				// A player cannot build on an occupied vertex.
+				if($this->map->isVertexOccupied($location))
+					return false;
+
+				// All settlements must be 1 vertex away from other vertices
+				if($this->map->isAdjacentVerticesOccupied($location))
+					return false;
+
+				// All settlements must be connected to a road that the player owns
+				if($this->map->isIncidentEdgesOccupiedByPlayer($location, $player))
+					return true;
+
+				return false;
+			}
+		}
+		elseif($location instanceof \Settlers\Edge && 
+			!$this->map->isEdgeOccupied($location) &&
+			$type == \Settlers\Constants::BUILD_ROAD) {
+
+			// Roads must be connected to other roads owned by the player
+			if($this->map->isAdjacentEdgesOccupiedByPlayer($location, $player))
+				return true;
+
+			// Or, roads must be connected to a settlement/city owned by the player
+			if($this->map->isEndpointsOccupiedByPlayer($location, $player))
+				return true;
+
+			return false;
+		}
+
+		return false;
 	}
 }
