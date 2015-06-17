@@ -7,7 +7,7 @@ class MapTest extends PHPUnit_Framework_TestCase {
 	 */
 	public function testCreateMissingParams()
 	{
-		$map = new \Settlers\Map(array());
+		$map = new \Settlers\Map();
 	}
 
 	/**

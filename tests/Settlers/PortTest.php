@@ -6,7 +6,7 @@ class PortTest extends PHPUnit_Framework_TestCase {
 	 */
 	public function testCreateMissingParams()
 	{
-		$port = new \Settlers\Port(array());
+		$port = new \Settlers\Port();
 	}
 
 	/**

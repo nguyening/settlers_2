@@ -7,7 +7,7 @@ class HexTest extends PHPUnit_Framework_TestCase {
 	 */
 	public function testCreateMissingParams()
 	{
-		$hex = new \Settlers\Hex(array());
+		$hex = new \Settlers\Hex();
 	}
 
 	/**

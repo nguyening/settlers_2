@@ -6,7 +6,7 @@ class EdgeTest extends PHPUnit_Framework_TestCase {
 	 */
 	public function testCreateMissingParams()
 	{
-		$edge = new \Settlers\Edge(array());
+		$edge = new \Settlers\Edge();
 	}
 
 	/**
@@ -82,5 +82,49 @@ class EdgeTest extends PHPUnit_Framework_TestCase {
 
 		$edge->addVertex(1, $vertex);
 		$this->assertSame($vertex, $edge->getVertex(1));
+	}
+
+	/**
+	 * @depends 				testCreateMock
+	 */
+	public function testNullPiece($edge)
+	{
+		$this->assertNull($edge->getPiece());
+	}
+
+	/**
+	 * @depends 				testCreateMock
+	 * @expectedException		Exception
+	 * @expectedException		3
+	 */
+	public function testAddPieceInvalid($edge)
+	{
+		$player = $this->getMockBuilder('\Settlers\Player')
+			->disableOriginalConstructor()
+			->getMock();
+
+		$map_piece = new \Settlers\MapPiece(array(
+			'player' => $player,
+			'type' => \Settlers\Constants::BUILD_CITY
+		));
+		$edge->setPiece($map_piece);
+	}
+
+	/**
+	 * @depends 				testCreateMock
+	 */
+	public function testAddPiece($edge)
+	{
+		$player = $this->getMockBuilder('\Settlers\Player')
+			->disableOriginalConstructor()
+			->getMock();
+
+		$map_piece = new \Settlers\MapPiece(array(
+			'player' => $player,
+			'type' => \Settlers\Constants::BUILD_ROAD
+		));
+		$edge->setPiece($map_piece);
+
+		$this->assertSame($map_piece, $edge->getPiece());
 	}
 }

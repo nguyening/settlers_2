@@ -2,9 +2,10 @@
 namespace Settlers;
 class Edge {
 	public $hex;
+	public $piece;
 	private $vertices;	// endpoints of this edge
 
-	public function __construct($params)
+	public function __construct($params = array())
 	{
 		if(empty($params['hex'])) throw new \Exception('Missing parameters.', 1);
 		if(!$params['hex'] instanceof \Settlers\Hex) throw new \Exception('Invalid parameters.', 2);
@@ -24,5 +25,19 @@ class Edge {
 		if(empty($this->vertices[$idx]))
 			return null;
 		return $this->vertices[$idx];
+	}
+
+	public function getPiece()
+	{
+		return $this->piece;
+	}
+
+	public function setPiece($piece)
+	{
+		if(empty($piece)) throw new \Exception('Missing parameter.', 1);
+		if(!$piece instanceof \Settlers\MapPiece) throw new \Exception('Invalid parameter.', 2);
+		if($piece->getType() != \Settlers\Constants::BUILD_ROAD) throw new \Exception('Invalid action.', 3);
+
+		$this->piece = $piece;
 	}
 }

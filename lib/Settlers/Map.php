@@ -13,7 +13,7 @@ class Map {
 	const HEX_DIR_NW = 4;
 	const HEX_DIR_NE = 5;
 
-	public function __construct($params)
+	public function __construct($params = array())
 	{
 		$filter_options = array(
 			'options' => array(
@@ -61,6 +61,266 @@ class Map {
 		}
 		return $output;
 	}
+
+	/**
+	 * MAP RELATION LOGICS
+	 */
+
+	public function getAdjacentVertices($vertex)
+	{
+		if(empty($vertex)) throw new \Exception('Missing parameter.', 1);
+		if(!$vertex instanceof \Settlers\Vertex) throw new \Exception('Invalid parameter.', 2);
+
+		$neighbors = array();
+		for($i = 0; $i < 3; $i++) {
+			// Try all possible edges that this vertex connects to.
+			if(!empty($edge = $vertex->getEdge($i))) {
+				// Grab the other vertex that this edge is connected to.
+				if(spl_object_hash($edge->getVertex(0)) != spl_object_hash($vertex))
+					$neighbors[] = $edge->getVertex(0);
+				else
+					$neighbors[] = $edge->getVertex(1);
+			}
+		}
+
+		return $neighbors;
+	}
+
+	public function getAdjacentEdges($edge)
+	{
+		if(empty($edge)) throw new \Exception('Missing parameter.', 1);
+		if(!$edge instanceof \Settlers\Edge) throw new \Exception('Invalid parameter.', 2);
+
+		$neighbors = array();
+		foreach(array($edge->getVertex(0), $edge->getVertex(1))
+			as $idx => $vertex) {
+
+			// Grab all the edges from both vertices of $edge
+			for($i = 0; $i < 3; $i++) {
+				if(!empty($e = $vertex->getEdge($i)) &&
+					spl_object_hash($e) !== spl_object_hash($edge)) {
+					$neighbors[] = $e;
+				}
+			}
+		}
+
+		return $neighbors;
+	}
+
+	public function isAdjacentEdge($e1, $e2)
+	{
+		if(empty($e1) || empty($e2)) throw new \Exception('Missing parameter(s).', 1);
+		if(!$e1 instanceof \Settlers\Edge ||
+			!$e2 instanceof \Settlers\Edge) throw new \Exception('Invalid parameter(s).', 2);
+
+		$v1 = $e1->getVertex(0);
+		$v2 = $e1->getVertex(1);
+
+		// Check edges connected to each vertex for $e2
+		foreach(array($v1, $v2) as $idx => $vertex) {
+			for($i = 0; $i < 3; $i++) {
+				if(!empty($edge = $vertex->getEdge($i)) &&
+					spl_object_hash($edge) == spl_object_hash($e2))
+					return true;
+			}
+		}
+
+		return false;
+	}
+
+	public function isAdjacentVertex($v1, $v2)
+	{
+		if(empty($v1) || empty($v2)) throw new \Exception('Missing parameter(s).', 1);
+		if(!$v1 instanceof \Settlers\Vertex ||
+			!$v2 instanceof \Settlers\Vertex) throw new \Exception('Invalid parameter(s).', 2);
+
+		// Check all of $v1's edges for $v2
+		for($i = 0; $i < 3; $i++) {
+			if(!($edge = $v1->getEdge($i)))
+				break;
+			
+			if(spl_object_hash($edge->getVertex(0)) == spl_object_hash($v2) || 
+				spl_object_hash($edge->getVertex(1)) == spl_object_hash($v2))
+				return true;
+		}
+
+		return false;
+	}
+
+	public function isBoundaryEdge($edge)
+	{
+		if(empty($edge)) throw new \Exception('Missing parameter.', 1);
+		if(!$edge instanceof \Settlers\Edge) throw new \Exception('Invalid parameter.', 2);
+
+		$v1 = $edge->getVertex(0);
+		$v2 = $edge->getVertex(1);
+
+		// A vertex with only two edges connected to it is always a boundary vertex
+		if($v1->getEdge(2) == null || $v2->getEdge(2) == null)
+			return true;
+		return false;
+	}
+
+	private function isBoundaryVertex($vertex)
+	{
+		if(empty($vertex)) throw new \Exception('Missing parameter.', 1);
+		if(!$vertex instanceof \Settlers\Vertex) throw new \Exception('Invalid parameter.', 2);
+
+		// Boundary vertices can have 2 or 3 edges:
+		// In the (2) case, either edge is a boundary edge
+		// In the (3) case, the CCW edge is always a boundary edge
+		return $this->isBoundaryEdge($vertex->getEdge(1));
+	}
+
+	public function isVertexOccupied($vertex)
+	{
+		if(empty($vertex)) throw new \Exception('Missing parameter(s).', 1);
+		if(!$vertex instanceof \Settlers\Vertex) throw new \Exception('Invalid parameter(s).', 2);
+
+		return ($vertex->getPiece() != null);
+	}
+
+	public function isEdgeOccupied($edge)
+	{
+		if(empty($edge)) throw new \Exception('Missing parameter(s).', 1);
+		if(!$edge instanceof \Settlers\Edge) throw new \Exception('Invalid parameter(s).', 2);
+
+		return ($edge->getPiece() != null);
+	}
+
+	public function isVertexOccupiedByPlayer($vertex, $player)
+	{
+		if(empty($vertex) || empty($player)) throw new \Exception('Missing parameter(s).', 1);
+		if(!$vertex instanceof \Settlers\Vertex ||
+			!$player instanceof \Settlers\Player) throw new \Exception('Invalid parameter(s).', 2);
+
+		if($this->isVertexOccupied($vertex) &&
+			spl_object_hash($vertex->getPiece()->getPlayer()) == spl_object_hash($player))
+			return true;
+		return false;
+	}
+
+	public function isEdgeOccupiedByPlayer($edge, $player)
+	{
+		if(empty($edge) || empty($player)) throw new \Exception('Missing parameter(s).', 1);
+		if(!$edge instanceof \Settlers\Edge ||
+			!$player instanceof \Settlers\Player) throw new \Exception('Invalid parameter(s).', 2);
+
+		if($this->isEdgeOccupied($edge) &&
+			spl_object_hash($edge->getPiece()->getPlayer()) == spl_object_hash($player))
+			return true;
+		return false;
+	}
+
+	/**
+	 * HEXAGONAL GRID MATHS
+	 */
+	
+	private function getHex($x, $y)
+	{
+		if(empty($this->hexes[$y]) || empty($this->hexes[$y][$x]))
+			return null;
+		return $this->hexes[$y][$x];
+	}
+
+	private function getCoordinatesInDirection($x, $y, $dir)
+	{
+		switch($dir) {
+			case Map::HEX_DIR_NE:
+				return array($x + 1, $y - 1);
+			break;
+
+			case Map::HEX_DIR_E:
+				return array($x + 1, $y);
+			break;
+
+			case Map::HEX_DIR_SE:
+				return array($x, $y + 1);
+			break;
+
+			case Map::HEX_DIR_SW:
+				return array($x - 1, $y + 1);
+			break;
+
+			case Map::HEX_DIR_W:
+				return array($x - 1, $y);
+			break;
+
+			case Map::HEX_DIR_NW:
+				return array($x, $y - 1);
+			break;
+		}
+	}
+
+	private function getHexInDirection($hex, $dir) {
+		$_x = $hex->x;
+		$_y = $hex->y;
+
+		// gets $x, $y -- new coordinates in the given direction
+		$coords = $this->getCoordinatesInDirection($_x, $_y, $dir);
+		return call_user_func_array(array($this, 'getHex'), $coords);
+	}
+
+
+	// Grab the neighbor counter-clockwise from $hex's vertex at $idx
+	private function getCcwHex($hex, $idx)
+	{
+		return $this->getHexInDirection($hex, ($idx + 3) % 6);
+	}
+
+	private function getCwHex($hex, $idx)
+	{
+		return $this->getHexInDirection($hex, ($idx + 4) % 6);
+	}
+
+	private function getCcwHexVertex($hex, $idx)
+	{
+		if($this->getCcwHex($hex, $idx) == null)
+			return null;
+		return $this->getCcwHex($hex, $idx)->getVertex(($idx + 2) % 6);
+	}
+
+	private function getCwHexVertex($hex, $idx)
+	{
+		if($this->getCwHex($hex, $idx) == null)
+			return null;
+		return $this->getCwHex($hex, $idx)->getVertex(($idx + 4) % 6);
+	}
+
+	private function getCwHexEdge($hex, $idx)
+	{
+		if($this->getCwHex($hex, $idx) == null)
+			return null;
+		return $this->getCwHex($hex, $idx)->getEdge(($idx + 3) % 6);
+	}
+
+	// Given a vertex index, grab the edge clockwise from it
+	public function getVertexCwEdge($hex, $idx)
+	{
+		return $hex->getEdge($idx % 6);
+	}
+
+	public function getVertexCcwEdge($hex, $idx)
+	{
+		return $hex->getEdge(($idx + 5) % 6);
+	}
+
+	public function getVertexOppositeEdge($hex, $idx)
+	{
+		// We choose to use CW hex to grab the opposite edge, but CCW also shares this edge.
+		if($this->getCwHex($hex, $idx) == null)
+			return null;
+		return $this->getCwHex($hex, $idx)->getEdge(($idx + 4) % 6);
+	}
+
+	public function getEdgeOppositeVertex($hex, $idx)
+	{
+		return $hex->getVertex(($idx + 1) % 6);
+	}
+
+	/**
+	 * MAP PLACEMENT LOGICS
+	 */
 
 	private function constructHexes()
 	{
@@ -236,15 +496,10 @@ class Map {
 		foreach($this->hexes as $r => $row) {
 			foreach($row as $c => $hex) {
 				for($i = 0; $i < 6; $i++) {
-					// If this vertex doesn't have a third edge, it is a boundary vertex
-					if($hex->getVertex($i)->getEdge(2) == null) {
-						$vertex = $hex->getVertex($i);
-						$e1 = $vertex->getEdge(0);
-						$e2 = $vertex->getEdge(1);
+					$edge = $hex->getEdge($i);
 
-						// Grab both edges that the vertex connects
-						$port_edges[spl_object_hash($e1)] = $e1;
-						$port_edges[spl_object_hash($e2)] = $e2;
+					if($this->isBoundaryEdge($edge)) {
+						$port_edges[spl_object_hash($edge)] = $edge;
 					}
 				}
 			}
@@ -279,108 +534,103 @@ class Map {
 		return $this->baron;
 	}
 
-	/**
-	 * HEXAGONAL GRID MATHS
-	 */
-	private function getHex($x, $y)
+	public function buildPiece($player, $location, $type)
 	{
-		if(empty($this->hexes[$y]) || empty($this->hexes[$y][$x]))
-			return null;
-		return $this->hexes[$y][$x];
+		if(empty($player) ||
+			empty($location) || 
+			!isset($type)) throw new \Exception('Missing parameter(s).', 1);
+		if(!($location instanceof \Settlers\Vertex || $location instanceof \Settlers\Edge) ||
+			!$player instanceof \Settlers\Player)
+			throw new \Exception('Invalid parameter(s).', 2);
+
+		if($this->canBuildPiece($player, $location, $type))
+			$this->placePiece($player, $location, $type);
+		else
+			throw new \Exception('Invalid action.', 3);
 	}
 
-	private function getCoordinatesInDirection($x, $y, $dir)
+	public function canBuildPiece($player, $location, $type)
 	{
-		switch($dir) {
-			case Map::HEX_DIR_NE:
-				return array($x + 1, $y - 1);
-			break;
+		if(empty($player) ||
+			empty($location) || 
+			!isset($type)) throw new \Exception('Missing parameter(s).', 1);
+		if(!($location instanceof \Settlers\Vertex || $location instanceof \Settlers\Edge) ||
+			!$player instanceof \Settlers\Player)
+			throw new \Exception('Invalid parameter(s).', 2);
 
-			case Map::HEX_DIR_E:
-				return array($x + 1, $y);
-			break;
+		if($location instanceof \Settlers\Vertex) {
+			if($type == \Settlers\Constants::BUILD_CITY) {
+				// Cities can only be built on current settlements owned by the player
+				if($this->isVertexOccupiedByPlayer($location, $player) &&
+					$location->getPiece()->getType() == \Settlers\Constants::BUILD_SETTLEMENT)
+					return true;
 
-			case Map::HEX_DIR_SE:
-				return array($x, $y + 1);
-			break;
+				return false;
+			}
+			elseif($type == \Settlers\Constants::BUILD_SETTLEMENT) {
+				// A player cannot build on an occupied vertex.
+				if($this->isVertexOccupied($location))
+					return false;
 
-			case Map::HEX_DIR_SW:
-				return array($x - 1, $y + 1);
-			break;
+				// All settlements must be 1 vertex away from other vertices
+				$vertices = $this->getAdjacentVertices($location);
+				foreach($vertices as $idx => $vertex) {
+					if($this->isVertexOccupied($vertex))
+						return false;
+				}
 
-			case Map::HEX_DIR_W:
-				return array($x - 1, $y);
-			break;
+				// All settlements must be connected to a road that the player owns
+				foreach(array($location->getEdge(0), $location->getEdge(1), $location->getEdge(2))
+					as $idx => $edge) {
+					if(empty($edge)) continue;
+					if($this->isEdgeOccupiedByPlayer($edge, $player)) {
+						return true;
+					}
+				}
 
-			case Map::HEX_DIR_NW:
-				return array($x, $y - 1);
-			break;
+				return false;
+			}
 		}
+		elseif($location instanceof \Settlers\Edge && 
+			!$this->isEdgeOccupied($location) &&
+			$type == \Settlers\Constants::BUILD_ROAD) {
+
+			// Roads must be connected to other roads owned by the player
+			foreach($this->getAdjacentEdges($location) as $idx => $edge) {
+				if($this->isEdgeOccupiedByPlayer($edge, $player))
+					return true;
+			}
+			// Or, roads must be connected to a settlement/city owned by the player
+			foreach(array($location->getVertex(0), $location->getVertex(1))
+				as $idx => $vertex) {
+				if($this->isVertexOccupiedByPlayer($vertex, $player))
+					return true;
+			}
+
+			return false;
+		}
+
+		return false;
 	}
 
-	private function getHexInDirection($hex, $dir) {
-		$_x = $hex->x;
-		$_y = $hex->y;
-
-		// gets $x, $y -- new coordinates in the given direction
-		$coords = $this->getCoordinatesInDirection($_x, $_y, $dir);
-		return call_user_func_array(array($this, 'getHex'), $coords);
-	}
-
-
-	// Grab the neighbor counter-clockwise from $hex's vertex at $idx
-	private function getCcwHex($hex, $idx)
+	private function placePiece($player, $location, $type)
 	{
-		return $this->getHexInDirection($hex, ($idx + 3) % 6);
-	}
+		if(empty($player) ||
+			empty($location) || 
+			!isset($type)) throw new \Exception('Missing parameter(s).', 1);
+		if(!($location instanceof \Settlers\Vertex || $location instanceof \Settlers\Edge) ||
+			!$player instanceof \Settlers\Player)
+			throw new \Exception('Invalid parameter(s).', 2);
 
-	private function getCwHex($hex, $idx)
-	{
-		return $this->getHexInDirection($hex, ($idx + 4) % 6);
-	}
-
-	private function getCcwHexVertex($hex, $idx)
-	{
-		if($this->getCcwHex($hex, $idx) == null)
-			return null;
-		return $this->getCcwHex($hex, $idx)->getVertex(($idx + 2) % 6);
-	}
-
-	private function getCwHexVertex($hex, $idx)
-	{
-		if($this->getCwHex($hex, $idx) == null)
-			return null;
-		return $this->getCwHex($hex, $idx)->getVertex(($idx + 4) % 6);
-	}
-
-	private function getCwHexEdge($hex, $idx)
-	{
-		if($this->getCwHex($hex, $idx) == null)
-			return null;
-		return $this->getCwHex($hex, $idx)->getEdge(($idx + 3) % 6);
-	}
-
-	// Given a vertex index, grab the edge clockwise from it
-	public function getVertexCwEdge($hex, $idx)
-	{
-		return $hex->getEdge($idx % 6);
-	}
-
-	public function getVertexCcwEdge($hex, $idx)
-	{
-		return $hex->getEdge(($idx + 5) % 6);
-	}
-
-	public function getVertexOppositeEdge($hex, $idx)
-	{
-		// We choose to use CW hex to grab the opposite edge, but CCW also shares this edge.
-		if($this->getCwHex($hex, $idx) == null)
-			return null;
-		return $this->getCwHex($hex, $idx)->getEdge(($idx + 4) % 6);
-	}
-
-	public function getEdgeOppositeVertex($hex, $idx)
-	{
-		return $hex->getVertex(($idx + 1) % 6);
+		if($type == \Settlers\Constants::BUILD_CITY) {
+			$location->getPiece()->setType($type);
+		}
+		else {
+			$piece = new \Settlers\MapPiece(array(
+				'type' => $type,
+				'player' => $player
+			));
+			$location->setPiece($piece);
+		}
 	}
 }

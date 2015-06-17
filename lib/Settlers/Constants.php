@@ -52,6 +52,33 @@ abstract class Constants extends BasicEnum {
 		-1,-1,-1
 	);
 
+	const BUILD_ROAD = 0;
+	const BUILD_SETTLEMENT = 1;
+	const BUILD_CITY = 2;
+	const BUILD_DEVEL = 3;
+
+	const COST_BUILD = array(
+		Constants::BUILD_ROAD => array(
+			Constants::RESOURCE_BRICK => 1,
+			Constants::RESOURCE_WOOD => 1,
+		),
+		Constants::BUILD_SETTLEMENT => array(
+			Constants::RESOURCE_BRICK => 1,
+			Constants::RESOURCE_WHEAT => 1,
+			Constants::RESOURCE_SHEEP => 1,
+			Constants::RESOURCE_WOOD => 1
+		),
+		Constants::BUILD_CITY => array(
+			Constants::RESOURCE_ORE => 3,
+			Constants::RESOURCE_WHEAT => 2,
+		),
+		Constants::BUILD_DEVEL => array(
+			Constants::RESOURCE_WHEAT => 1,
+			Constants::RESOURCE_ORE => 1,
+			Constants::RESOURCE_SHEEP => 1,
+		)
+	);
+
 	public function terrainToResource($terrain)
 	{
 		switch($terrain) {

@@ -9,7 +9,7 @@ class Hex {
 	private $vertices = array();
 	private $edges = array();
 
-	public function __construct($params)
+	public function __construct($params = array())
 	{
 		$filter_options = array(
 			'options' => array(
