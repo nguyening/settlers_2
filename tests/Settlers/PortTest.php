@@ -15,7 +15,7 @@ class PortTest extends PHPUnit_Framework_TestCase {
 	 */
 	public function testCreateInvalidParams()
 	{
-		$port = new \Settlers\Port(array('edge' => 1, 'resource' => "a"));
+		$port = new \Settlers\Port(array('resource' => "a"));
 	}
 
 	public function testCreateMock()
@@ -25,7 +25,6 @@ class PortTest extends PHPUnit_Framework_TestCase {
 			->getMock();
 
 		$port = new \Settlers\Port(array(
-			'edge' => $edge,
 			'resource' => \Settlers\Constants::RESOURCE_WOOD
 		));
 		return $port;

@@ -3,7 +3,6 @@ namespace Settlers;
 class Map {
 	public $map_size;
 	private $hexes;
-	private $ports;
 	private $baron;
 
 	const HEX_DIR_E = 0;
@@ -277,7 +276,25 @@ class Map {
 			spl_object_hash($edge->getPiece()->getPlayer()) == spl_object_hash($player))
 			return true;
 		return false;
-	}	
+	}
+
+	public function isEdgePort($edge)
+	{
+		return $edge->getPort() !== null;
+	}
+
+	public function isEdgeResourcePort($edge, $resource)
+	{
+		if(empty($edge) || !isset($resource)) throw new \Exception('Missing parameter(s).', 1);
+		if(!$edge instanceof \Settlers\Edge ||
+			!is_int($resource)) throw new \Exception('Invalid parameter(s).', 2);
+
+		if($this->isEdgePort($edge) &&
+			$edge->getPort()->getResourceType() == $resource)
+			return true;
+
+		return false;
+	}
 
 	private function isAdjacentEdge($e1, $e2)
 	{
@@ -662,10 +679,11 @@ class Map {
 
 			$resource = $port_dist[$i];
 			if($resource >= 0) {
-				$this->ports[] = new \Settlers\Port(array(
-					'edge' => $edge,
+				$port = new \Settlers\Port(array(
 					'resource' => $resource
 				));
+
+				$edge->setPort($port);
 			}
 			$i++;
 		}

@@ -1,6 +1,7 @@
 <?php
 namespace Settlers;
 class Edge {
+	private $port;
 	private $piece;
 	private $vertices;	// endpoints of this edge
 
@@ -9,14 +10,17 @@ class Edge {
 		$this->vertices = array();
 	}
 
-	public function __toString()
+	public function setPort($port)
 	{
-		for($i = 0; $i < 6; $i++) {
-			if(spl_object_hash($this->hex->getEdge($i)) == 
-				spl_object_hash($this))
-				return sprintf("(%d, %d, #%d) [%s==%s]", 
-					$this->hex->x, $this->hex->y, $i, $this->vertices[0], $this->vertices[1]);
-		}
+		if(empty($port)) throw new \Exception('Missing parameter.', 1);
+		if(!$port instanceof \Settlers\Port) throw new \Exception('Invalid parameter.', 2);
+
+		$this->port = $port;
+	}
+
+	public function getPort()
+	{
+		return $this->port;
 	}
 
 	public function addVertex($idx, $vertex)

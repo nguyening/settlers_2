@@ -9,17 +9,6 @@ class Vertex {
 		$this->edges = array();
 	}
 
-	public function __toString()
-	{
-		for($i = 0; $i < 6; $i++) {
-			if(spl_object_hash($this->hex->getVertex($i)) == 
-				spl_object_hash($this))
-				return sprintf("(%d, %d #%d)", $this->hex->x, $this->hex->y, $i);
-		}
-		
-		return "(ERR)";
-	}
-
 	public function addEdge($idx, $edge)
 	{
 		if(!(is_int($idx) && $idx >= 0 && $idx < 3) ||

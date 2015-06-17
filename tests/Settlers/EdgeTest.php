@@ -1,5 +1,16 @@
 <?php
 class EdgeTest extends PHPUnit_Framework_TestCase {
+	/**
+	 * @expectedException		Exception
+	 * @expectedExceptionCode	2
+	 */
+	public function testCreateInvalidPort()
+	{
+		$edge = new \Settlers\Edge(array(
+			'port' => 1
+		));
+	}
+
 	public function testCreateMock()
 	{
 		$hex = $this->getMockBuilder('\Settlers\Hex')

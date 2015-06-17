@@ -16,6 +16,12 @@ abstract class Constants extends BasicEnum {
 	const RESOURCE_WOOD = 4;
 	const RESOURCE_ANY = 5;
 
+	const DEVEL_KNIGHT = 0;
+	const DEVEL_MONOPOLY = 1;
+	const DEVEL_ROAD_BUILDING = 2;
+	const DEVEL_YEAR_OF_PLENTY = 3;
+	const DEVEL_VICTORY_POINT = 4;
+
 	const MAX_SIZE = 32;
 
 	const TERRAIN_DISTRIBUTION = array(
@@ -133,7 +139,7 @@ abstract class Constants extends BasicEnum {
 	{
 		$rolls = array();
 		for($i = 0; $i < $num; $i++) {
-			$rolls[] = rand(0, 7);
+			$rolls[] = random_int(0, 6);
 		}
 		return $rolls;
 	}

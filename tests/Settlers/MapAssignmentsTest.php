@@ -60,28 +60,79 @@ class MapAssignmentsTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals($chit_counts, \Settlers\Constants::CHIT_DISTRIBUTION);
 	}
 
+	public function testMapChitTotal()
+	{
+		$this->map->shuffleChits(\Settlers\Constants::CHIT_DISTRIBUTION);
+
+		$prop = $this->map_reflection->getProperty('hexes');
+		$prop->setAccessible(true);
+		$hexes = $prop->getValue($this->map);
+
+		foreach(\Settlers\Constants::CHIT_DISTRIBUTION as $roll => $count) {
+			$this->assertCount(
+				$count,
+				$this->map->getProducingHexes($roll)
+			);
+		}
+	}
+
 	public function testNoPorts()
 	{
-		$this->map->shufflePorts(array());
-		$prop = $this->map_reflection->getProperty('ports');
+		$map = $this->map;
+		$prop = $this->map_reflection->getProperty('hexes');
 		$prop->setAccessible(true);
+		$hexes = $prop->getValue($map);
+
+		$map->shufflePorts(array());
+
+		$ports = array();
+		foreach($hexes as $r => $row) {
+			foreach($row as $c => $hex) {
+				for($i = 0; $i < 6; $i++) {
+					$edge = $hex->getEdge($i);
+					$this->assertNull($edge->getPort());
+				}
+			}
+		}
 		
-		$this->assertCount(0, $prop->getValue($this->map));
 	}
 
 	public function testPorts()
 	{
-		$this->map->shufflePorts(\Settlers\Constants::PORT_DISTRIBUTION);
-
-		$prop = $this->map_reflection->getProperty('ports');
+		$map = $this->map;
+		$prop = $this->map_reflection->getProperty('hexes');
 		$prop->setAccessible(true);
-		$ports = $prop->getValue($this->map);
-		
-		$num_ports = count(array_filter(\Settlers\Constants::PORT_DISTRIBUTION, function($item) {
-			return $item >= 0;
-		}));
+		$hexes = $prop->getValue($map);
 
-		$this->assertCount($num_ports, $ports);
+		$isBoundaryEdge = $this->map_reflection->getMethod('isBoundaryEdge');
+		$isBoundaryEdge->setAccessible(true);
+
+		$map->shufflePorts(\Settlers\Constants::PORT_DISTRIBUTION);
+
+		$ports = array();
+		$port_dist_idx = 0;
+		foreach($hexes as $r => $row) {
+			foreach($row as $c => $hex) {
+				for($i = 0; $i < 6; $i++) {
+					$edge = $hex->getEdge($i);
+					if($isBoundaryEdge->invokeArgs($map, array($edge))) {
+						if($map->isEdgePort($edge)) {
+							$this->assertTrue($map->isEdgeResourcePort(
+								$edge, \Settlers\Constants::PORT_DISTRIBUTION[$port_dist_idx]
+							));
+						}
+						else {
+							$this->assertEquals(-1, \Settlers\Constants::PORT_DISTRIBUTION[$port_dist_idx]);
+						}
+
+						$port_dist_idx++;
+					}
+					else {
+						$this->assertFalse($map->isEdgePort($edge));
+					}
+				}
+			}
+		}
 	}
 
 	public function testAssignments()
