@@ -16,7 +16,9 @@ class GameBuildTest extends PHPUnit_Framework_TestCase {
 			'room_size' => 4,
 			'map_size' => 2
 		));
-
+		$game->setupMap(2);
+		$game->shuffleAssignments();
+		
 		$player = $this->getMockBuilder('\Settlers\Player')
 			->disableOriginalConstructor()
 			->getMock();

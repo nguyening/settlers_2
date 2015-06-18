@@ -5,16 +5,10 @@ class HexMathTest extends PHPUnit_Framework_TestCase {
 
 	public function setUp()
 	{
-		$map = $this->getMockBuilder('\Settlers\Map')
-			->disableOriginalConstructor()
-			->getMock();
+		$map = new \Settlers\Map(array(
+			'map_size' => 3
+		));
 		$map_reflection = new ReflectionClass('\Settlers\Map');
-
-		// Fill in hexes
-		$map->map_size = 3;
-		$constructHexes = $map_reflection->getMethod('constructHexes');
-		$constructHexes->setAccessible(true);
-		$constructHexes->invokeArgs($map, array());
 
 		$this->map = $map;
 		$this->map_reflection = $map_reflection;

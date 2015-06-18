@@ -103,6 +103,8 @@ class GameTest extends PHPUnit_Framework_TestCase {
 			$this->assertTrue(in_array($player_slot, array_keys($players)));
 			
 		}
+
+		return $game;
 	}
 
 	/**
@@ -112,5 +114,34 @@ class GameTest extends PHPUnit_Framework_TestCase {
 	{
 		$slot = $game->getPlayerTurn();
 		$this->assertTrue($game->getPlayer($slot) instanceof \Settlers\Player);
+	}
+
+	/**
+	 * @depends testDetermineOrdering
+	 */
+	public function testChangingTurns($game)
+	{
+		$game_reflection = new ReflectionClass('\Settlers\Game');
+		$prop = $game_reflection->getProperty('current_turn');
+		$prop->setAccessible(true);
+
+		for($rotation = 0; $rotation < 3; $rotation++) {
+			for($i = 0; $i < 4; $i++) {
+				$this->assertEquals($i, $prop->getValue($game));
+				$game->nextPlayerTurn();
+			}
+		}
+	}
+
+	/**
+	 * @depends testAddPlayers
+	 */
+	public function testRemovePlayers($game)
+	{
+		$game->removePlayer(1);
+		
+		$this->assertNotNull($game->getPlayer(0));
+		$this->assertNull($game->getPlayer(1));
+		$this->assertNotNull($game->getPlayer(2));
 	}
 }

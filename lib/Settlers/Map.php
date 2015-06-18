@@ -374,7 +374,7 @@ class Map {
 	 * HEXAGONAL GRID MATHS
 	 */
 	
-	private function getHex($x, $y)
+	public function getHex($x, $y)
 	{
 		if(empty($this->hexes[$y]) || empty($this->hexes[$y][$x]))
 			return null;
@@ -416,7 +416,7 @@ class Map {
 
 		// gets $x, $y -- new coordinates in the given direction
 		$coords = $this->getCoordinatesInDirection($_x, $_y, $dir);
-		return call_user_func_array(array($this, 'getHex'), $coords);
+		return $this->getHex($coords[0], $coords[1]);
 	}
 
 
@@ -426,7 +426,7 @@ class Map {
 		return $this->getHexInDirection($hex, ($idx + 3) % 6);
 	}
 
-	public function getCwHex($hex, $idx)
+	private function getCwHex($hex, $idx)
 	{
 		return $this->getHexInDirection($hex, ($idx + 4) % 6);
 	}
@@ -600,7 +600,7 @@ class Map {
 	}
 
 	// Shuffles terrain on the map, default terrain tile is desert
-	public function shuffleTerrain($terrain_dist)
+	public function shuffleTerrain($terrain_dist = \Settlers\Constants::TERRAIN_DISTRIBUTION)
 	{
 		foreach($this->hexes as $r => $row) {
 			foreach($row as $c => $hex) {
@@ -630,7 +630,7 @@ class Map {
 	}
 	
 	// Shuffles chits over the map, default chit is 7 (for desert)
-	public function shuffleChits($chit_dist)
+	public function shuffleChits($chit_dist = \Settlers\Constants::CHIT_DISTRIBUTION)
 	{
 		foreach($this->hexes as $r => $row) {
 			foreach($row as $c => $hex) {
@@ -664,7 +664,7 @@ class Map {
 		}		
 	}
 
-	public function shufflePorts($port_dist)
+	public function shufflePorts($port_dist = \Settlers\Constants::TERRAIN_DISTRIBUTION)
 	{
 		$this->ports = array();
 		$port_edges = array();

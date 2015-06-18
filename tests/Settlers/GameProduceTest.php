@@ -2,6 +2,7 @@
 class GameProduceTest extends PHPUnit_Framework_TestCase {
 	protected $player;
 	protected $game;
+	protected $map;
 	public function setUp()
 	{
 		$game_reflection = new ReflectionClass('\Settlers\Game');
@@ -11,6 +12,8 @@ class GameProduceTest extends PHPUnit_Framework_TestCase {
 			'room_size' => 4,
 			'map_size' => 2
 		));
+		$game->setupMap(2);
+		$game->shuffleAssignments();
 
 		$prop = $game_reflection->getProperty('map');
 		$prop->setAccessible(true);
@@ -20,24 +23,19 @@ class GameProduceTest extends PHPUnit_Framework_TestCase {
 			'user' => 1
 		));
 
-		$prop = $map_reflection->getProperty('hexes');
-		$prop->setAccessible(true);
-		$hexes = $prop->getValue($map);
-
 		$game->addPlayer(0, $player);
 
 		$this->game = $game;
 		$this->player = $player;
-		$this->hexes = $hexes;
+		$this->map = $map;
 	}
 
 	public function testSinglePlayerHexProduce()
 	{
 		$game = $this->game;
+		$map = $this->map;
 		$player = $this->player;
-		$hexes = $this->hexes;
-
-		$hex = $hexes[0][0];
+		$hex = $map->getHex(0, 0);
 		
 		$hex->setTerrain(\Settlers\Constants::TERRAIN_FOREST);
 		$game->buildPiece(
@@ -48,7 +46,7 @@ class GameProduceTest extends PHPUnit_Framework_TestCase {
 		$game->produceResourcesAtHex($hex);
 		$this->assertEquals(1, $player->getResourceCount(\Settlers\Constants::RESOURCE_WOOD));
 
-		$hex = $hexes[-1][0];
+		$hex = $map->getHex(0, -1);
 		$hex->setTerrain(\Settlers\Constants::TERRAIN_PASTURE);
 		$game->produceResourcesAtHex($hex);
 		$this->assertEquals(1, $player->getResourceCount(\Settlers\Constants::RESOURCE_SHEEP));
@@ -57,13 +55,13 @@ class GameProduceTest extends PHPUnit_Framework_TestCase {
 	public function testMultiplePlayerHexProduce($value='')
 	{
 		$game = $this->game;
+		$map = $this->map;
 		$player = $this->player;
 		$p2 = new \Settlers\Player(array(
 			'user' => 1
 		));
-		$hexes = $this->hexes;
 		$game->addPlayer(1, $p2);
-		$hex = $hexes[0][0];
+		$hex = $map->getHex(0, 0);
 
 		$hex->setTerrain(\Settlers\Constants::TERRAIN_FOREST);
 		$game->buildPiece(
@@ -91,12 +89,12 @@ class GameProduceTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals(3, $player->getResourceCount(\Settlers\Constants::RESOURCE_WOOD));
 		$this->assertEquals(3, $player->getResourceCount(\Settlers\Constants::RESOURCE_WOOD));
 
-		$hex = $hexes[-1][0];
+		$hex = $map->getHex(0, -1);
 		$hex->setTerrain(\Settlers\Constants::TERRAIN_PASTURE);
 		$game->produceResourcesAtHex($hex);
 		$this->assertEquals(2, $player->getResourceCount(\Settlers\Constants::RESOURCE_SHEEP));
 
-		$hex = $hexes[0][-1];
+		$hex = $map->getHex(-1,0);
 		$hex->setTerrain(\Settlers\Constants::TERRAIN_PASTURE);
 		$game->produceResourcesAtHex($hex);
 		$this->assertEquals(3, $player->getResourceCount(\Settlers\Constants::RESOURCE_SHEEP));
@@ -106,26 +104,26 @@ class GameProduceTest extends PHPUnit_Framework_TestCase {
 	public function testDistributeOnRoll()
 	{
 		$game = $this->game;
+		$map = $this->map;
 		$player = $this->player;
 		$p2 = new \Settlers\Player(array(
 			'user' => 1
 		));
-		$hexes = $this->hexes;
 		$game->addPlayer(1, $p2);
 		
-		$hex = $hexes[0][0];
+		$hex = $map->getHex(0,0);
 		$hex->setTerrain(\Settlers\Constants::TERRAIN_FOREST);
 		$hex->setChit(13);
 
-		$hex = $hexes[-1][0];
+		$hex = $map->getHex(0, -1);
 		$hex->setTerrain(\Settlers\Constants::TERRAIN_PASTURE);
 		$hex->setChit(13);
 
-		$hex = $hexes[0][-1];
+		$hex = $map->getHex(-1, 0);
 		$hex->setTerrain(\Settlers\Constants::TERRAIN_PASTURE);
 		$hex->setChit(13);
 		
-		$hex = $hexes[0][0];
+		$hex = $map->getHex(0, 0);
 		$game->buildPiece(
 			$player, $hex->getVertex(0), \Settlers\Constants::BUILD_SETTLEMENT
 		);
