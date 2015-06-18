@@ -86,6 +86,10 @@ class GameTest extends PHPUnit_Framework_TestCase {
 	 */
 	public function testDetermineOrdering($game)
 	{
+		$game->processGameAction('finalize_lobby');
+		$game->setupMap(2);
+		$game->shuffleAssignments();
+		$game->processGameAction('finalize_map_assignments');
 		$game->determinePlayerOrdering();
 
 		$game_reflection = new ReflectionClass('\Settlers\Game');

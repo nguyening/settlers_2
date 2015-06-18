@@ -16,6 +16,7 @@ class GameBuildTest extends PHPUnit_Framework_TestCase {
 			'room_size' => 4,
 			'map_size' => 2
 		));
+		$game->processGameAction('finalize_lobby');
 		$game->setupMap(2);
 		$game->shuffleAssignments();
 		

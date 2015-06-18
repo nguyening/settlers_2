@@ -1,35 +1,10 @@
 <?php
 namespace Settlers;
 class Game {
-	const PLAYER_ROLL = 0;
-	const PLAYER_BUILD = 1;
-	const PLAYER_BUY_DEVEL = 2;
-	const PLAYER_PLAY_DEVEL = 3;
-	const PLAYER_MOVE_BARON = 4;
-	const PLAYER_DISCARD_RESOURCES = 5;
-	const PLAYER_EXCHANGE = 6;
-	const PLAYER_TRADE = 7;
-	const PLAYER_STEAL = 8;
-	const PLAYER_END_TURN = 9;
-	const PLAYER_SETUP = 10;
-
-	const STATE_SETUP_LOBBY = 0;
-	const STATE_SETUP_MAP_CREATION = 1;
-	const STATE_SETUP_ASSIGNMENTS_SHUFFLE = 2;
-	const STATE_SETUP_PLAYER_ORDERING = 3;
-	const STATE_SETUP_PLAYER_BUILD_1 = 4;
-	const STATE_SETUP_PLAYER_BUILD_2 = 5;
-	const STATE_SETUP_DISTRIBUTE = 6;
-
-	const STATE_TURN_START = 7;
-	const STATE_TURN_ROLLED = 8;
-	const STATE_TURN_FORCE_DISCARD = 9;
-	const STATE_TURN_BARON_ACTIVATED = 10;
-	const STATE_TURN_BARON_STEALING = 11;
-
 	public $room_size;
 	private $map;
-	private $state;
+	private $state_machine;
+
 	private $players = array();
 	private $players_order;
 	private $current_turn;
@@ -58,13 +33,24 @@ class Game {
 			$this->map = $params['map'];
 		}
 
-		if(isset($params['state']))
+		/*if(isset($params['state']))
 			$this->setState($params['state']);
 		else
 			$this->setState(Game::STATE_SETUP_LOBBY);
-		
+		*/
+
+		// Game properties
 		$this->room_size = $params['room_size'];
 		$this->current_turn = 0;
+
+		// Game flow logic
+		$state = new \Settlers\State();
+		$sm = new \Finite\StateMachine\StateMachine($state);
+		$loader = new \Finite\Loader\ArrayLoader(\Settlers\Constants::STATE_TRANSITIONS);
+
+		$loader->load($sm);
+		$sm->initialize();
+		$this->state_machine = $sm;
 	}
 
 	public function addPlayer($slot, $player)
@@ -94,178 +80,160 @@ class Game {
 		return $this->players[$slot];
 	}
 
-	public function getState()
-	{
-		return $this->state;
-	}
-
-	public function setState($state)
-	{
-		// TODO: Implement a FSM perhaps to be really strict?
-		$this->state = $state;
-	}
-
 	/**
 	 * GAME LOGIC
 	 */
 
+	public function processGameAction($action)
+	{
+		$sm = $this->state_machine;
+		$current_state = $sm->getCurrentState();
+		if(!$current_state->can($action))
+			throw new \Exception('Invalid action.', 3);
+
+		$sm->apply($action);
+	}
+
 	public function processPlayerAction($player, $action, $args = array())
 	{
-		if(spl_object_hash($this->players[$this->getPlayerTurn()]) 
-			!= spl_object_hash($player)) {
-			if($this->state == Game::STATE_TURN_FORCE_DISCARD &&
-				$action != Game::PLAYER_DISCARD_RESOURCES)
-				throw new \Exception('Invalid action.', 3);
+		$sm = $this->state_machine;
+		$current_state = $sm->getCurrentState();
 
+		if(!($this->isPlayerCurrentPlayer($player) || $current_state->has('out_of_turn_acceptable')))
 			throw new \Exception('Out-of-turn action.', 6);
-		} 
+
+		if(!$current_state->has(\Settlers\Constants::actionToStateProperty($action, $args)))
+			throw new \Exception('Invalid action.', 3);
 			
 		switch($action) {
-			case Game::PLAYER_SETUP:
-				if(!($this->state == Game::STATE_SETUP_PLAYER_BUILD_1 ||
-					$this->state == Game::STATE_SETUP_PLAYER_BUILD_2))
-					throw new \Exception('Invalid action.', 3);
-
+			case \Settlers\Constants::PLAYER_BUILD:
 				// Count number of types of pieces the player currently has
 				$pieces = $player->getPieces();
-
+				
 				switch($args['type']) {
-					// Each player gets to build 1 settlement and 1 road during
-					// each round of the setup phase.
 					case \Settlers\Constants::BUILD_SETTLEMENT:
-						$num_settlements = empty($pieces[\Settlers\Constants::BUILD_SETTLEMENT]) ? 0 : count($pieces[\Settlers\Constants::BUILD_SETTLEMENT]);
-						
-						if(($this->state == Game::STATE_SETUP_PLAYER_BUILD_1 &&
-							$num_settlements > 0) ||
-							($this->state == Game::STATE_SETUP_PLAYER_BUILD_2 &&
-							$num_settlements > 1))
-							throw new \Exception('Invalid action.', 3);
-
-						if($this->canSetupPiece($player, $args['location'], $args['type']))
-							$this->buildPiece($player, $args['location'], $args['type']);
-						else
-							throw new \Exception('Invalid action.', 3);
+						$num_pieces = empty($pieces[\Settlers\Constants::BUILD_SETTLEMENT]) ? 0 : count($pieces[\Settlers\Constants::BUILD_SETTLEMENT]);
+						$max_pieces = $current_state->get('max_settlements');
 					break;
 
 					case \Settlers\Constants::BUILD_ROAD:
-						$num_roads = empty($pieces[\Settlers\Constants::BUILD_ROAD]) ? 0 : count($pieces[\Settlers\Constants::BUILD_ROAD]);
-						if(($this->state == Game::STATE_SETUP_PLAYER_BUILD_1 &&
-							$num_roads > 0) ||
-							($this->state == Game::STATE_SETUP_PLAYER_BUILD_2 &&
-							$num_roads > 1))
-							throw new \Exception('Invalid action.', 3);
-
-						if($this->canSetupPiece($player, $args['location'], $args['type']))
-							$this->buildPiece($player, $args['location'], $args['type']);
-						else
-							throw new \Exception('Invalid action.', 3);
+						$num_pieces = empty($pieces[\Settlers\Constants::BUILD_ROAD]) ? 0 : count($pieces[\Settlers\Constants::BUILD_ROAD]);
+						$max_pieces = $current_state->get('max_roads');
 					break;
 
-					default:
-						throw new \Exception('Invalid action.', 3);
+					case \Settlers\Constants::BUILD_CITY:
+						$num_pieces = empty($pieces[\Settlers\Constants::BUILD_CITY]) ? 0 : count($pieces[\Settlers\Constants::BUILD_CITY]);
+						$max_pieces = $current_state->get('max_cities');
 					break;
 				}
+				
+				// Players have relaxed restrictions on settlements during setup.
+				$can_build = $current_state->has('relaxed_settlement_restrictions')
+					? $this->canSetupPiece($player, $args['location'], $args['type'])
+					: $this->canBuildPiece($player, $args['location'], $args['type']);
+
+				// Allow building if:
+				//	(1) the player can afford it
+				//	(2) the player has enough pieces for it
+				//	(3) the player can build in the location
+				if(($current_state->has('free_building') || $this->canAfford($player, $args['type'])) &&
+					$num_pieces < $max_pieces &&
+					$can_build) {
+					$this->buildPiece($player, $args['location'], $args['type']);
+				}
+				else
+					throw new \Exception('Invalid action.', 3);
 			break;
 
-			case Game::PLAYER_ROLL:
-				if($this->state != Game::STATE_TURN_START)
-					throw new \Exception('Invalid action.', 3);
+			case \Settlers\Constants::PLAYER_ROLL:
+				$dice = $this->rollDice();
+				$roll = array_sum($dice);
 
-				$roll = array_sum($this->rollDice());
 				// Enforce 7-roll rule
 				if($roll == 7) 
-					$this->setState(Game::STATE_TURN_FORCE_DISCARD);
+					$sm->apply('roll_7');
 				else
-					$this->setState(Game::STATE_TURN_ROLLED);
+					$sm->apply('roll');
 			break;
 
-			case Game::PLAYER_BUILD:
-				if($this->state != Game::STATE_TURN_ROLLED)
-					throw new \Exception('Invalid action.', 3);
-
-				if($this->canAfford($player, $args['type']) &&
-					$this->canBuildPiece($player, $args['location'], $args['type']))
-					$this->buildPiece($players, $args['location'], $args['type']);
-			break;
-
-			case Game::PLAYER_BUY_DEVEL:
-				if($this->state != Game::STATE_TURN_ROLLED)
-					throw new \Exception('Invalid action.', 3);
-
+			case \Settlers\Constants::PLAYER_BUY_DEVEL:
 				if($this->canAfford($player, \Settlers\Constants::BUILD_DEVEL &&
 					!$this->isDevelDeckEmpty()))
 					$this->drawDevel($player);
+				else
+					throw new \Exception('Invalid action.', 3);
 			break;
 
-			case Game::PLAYER_PLAY_DEVEL:
-				// You can play Knights at the beginning of our turns before rolls.
-				if($this->state != Game::STATE_TURN_START &&
-					$args['type'] != \Settlers\Constants::DEVEL_KNIGHT)
-					throw new \Exception('Invalid action.', 3);
-
-				if($player->getDevelCardsCount($args['type']) > 0) 
+			case \Settlers\Constants::PLAYER_PLAY_DEVEL:
+				if($player->getDevelCardsCount($args['type']) > 0) {
 					$this->playDevel($player, $args['type']);
+
+					if($args['type'] == \Settlers\Constants::DEVEL_KNIGHT) {
+						// If we played a devel during an atypical state,
+						// then it has to be a knight during preroll.
+						if(!$current_state->can('devel_playable')) {
+							$sm->apply('play_preroll_knight');
+						}
+						else {
+							$sm->apply('play_postroll_knight');
+						}
+					}
+				}
+				else
+					throw new \Exception('Invalid action.', 3);
 			break;
 
-			case Game::PLAYER_MOVE_BARON:
-				if($this->state != Game::STATE_TURN_BARON_ACTIVATED)
-					throw new \Exception('Invalid action.', 3);
-
+			case \Settlers\Constants::PLAYER_MOVE_BARON:
 				$this->map->placeBaron($args['hex']);
-				$this->setState(Game::STATE_TURN_BARON_STEALING);
+				if($current_state->can('place_baron'))
+					$sm->apply('place_baron');
+				else
+					$sm->apply('place_preroll_baron');
 			break;
 
-			case Game::PLAYER_STEAL:
-				if($this->state != Game::STATE_TURN_BARON_STEALING)
-					throw new \Exception('Invalid action.', 3);
-
+			case \Settlers\Constants::PLAYER_STEAL:
 				$this->playerSteal($player, $args['player']);
-				$this->setState(Game::STATE_TURN_ROLLED);
+				if($current_state->can('steal_baron'))
+					$sm->apply('steal_baron');
+				else
+					$sm->apply('steal_preroll_baron');
 			break;
 
-			case Game::PLAYER_DISCARD_RESOURCES:
-				if($this->state != Game::STATE_TURN_FORCE_DISCARD)
+			case \Settlers\Constants::PLAYER_DISCARD_RESOURCES:
+				if(empty($args['resources'])) throw new \Exception('Invalid parameter(s).', 2);
+
+				$total_to_discard = 0;
+				$total_resources = 0;
+
+				// Check number of resources first.
+				foreach($args['resources'] as $resource => $count) {
+					$resource_count = $player->getResourceCount($resource);
+					$total_to_discard += $count;
+					$total_resources += $resource_count;
+
+					if($resource_count < $count)
+						throw new \Exception('Invalid action.', 3);
+				}
+
+				// Players under 8 resources don't have to discard.
+				if($total_resources <= 7)
 					throw new \Exception('Invalid action.', 3);
 
-				if(empty($args['resources'])) throw new \Exception('Invalid parameter(s).', 2);
+				// Player must discard half of their hand (rounded up).
+				if($total_to_discard < ceil($total_resources / 2))
+					throw new \Exception('Invalid action.', 3);
+
 				foreach($args['resources'] as $resource => $count) {
 					$player->takeResources($resource, $count);
 				}
-				
-				// if($this->isAllPlayersDoneDiscarding())
-				// 	$this->setState(Game::STATE_TURN_BARON_ACTIVATED);
-
 			break;
 
-			case Game::PLAYER_END_TURN:
-				// If the last player has ended their turn in round 1 of setup
-				if($this->state == Game::STATE_SETUP_PLAYER_BUILD_1) {
-					if($this->getPlayerTurn() == end($this->players_order)) {
-					
-						$this->setState(Game::STATE_SETUP_PLAYER_BUILD_2);
-						$this->players_order = array_reverse($this->players_order);
-					}
-				}
-				elseif($this->state == Game::STATE_SETUP_PLAYER_BUILD_2) {
-					if($this->getPlayerTurn() == end($this->players_order)) {
-
-						$this->players_order = array_reverse($this->players_order);
-
-						$this->setState(Game::STATE_SETUP_DISTRIBUTE);
-						// $this->distributeInitialResources();
-					}
-				}
-				else {
-					$this->setState(Game::STATE_TURN_START);
-				}
-
+			case \Settlers\Constants::PLAYER_END_TURN:
 				$this->nextPlayerTurn();
-
-				
 			break;
 
-			case Game::PLAYER_TRADE:
-				// with player or with port
+			case \Settlers\Constants::PLAYER_TRADE:
+			case \Settlers\Constants::PLAYER_EXCHANGE:
 			default:
 				throw new Exception('Invalid action.', 3);
 			break;	
@@ -286,7 +254,7 @@ class Game {
 		$this->map = new \Settlers\Map(array(
 			'map_size' => $map_size
 		));
-		$this->setState(Game::STATE_SETUP_ASSIGNMENTS_SHUFFLE);
+		$this->processGameAction('finalize_map_load');
 	}
 
 	public function shuffleAssignments($params = array())
@@ -317,18 +285,50 @@ class Game {
 			shuffle($this->players_order);
 		}
 
-		$this->setState(Game::STATE_SETUP_PLAYER_BUILD_1);
+		$this->processGameAction('finalize_players_order');
 	}
 
 	public function nextPlayerTurn()
 	{
+		$sm = $this->state_machine;
+		$current_state = $sm->getCurrentState();
 		$this->current_turn = ($this->current_turn + 1) % count($this->players);
+
+		// If we are back to the first player again during setup then
+		// move on from that setup state.
+		if($this->current_turn == 0 && $current_state->has('setup_turn')) {
+			if($current_state->has('last_setup_state')) {
+				$sm->apply('end_setup_round_2');
+			}
+			else {
+				$sm->apply('end_setup_round_1');
+			}
+		}
+		
+		// We don't end turns to check win conditions while setting up.
+		if($current_state->can('end_turn')) {
+			$sm->apply('end_turn');
+		}
 	}
 
 	public function getPlayerTurn()
 	{
 		if(empty($this->players_order) || empty($this->players)) throw new \Exception('Invalid action.', 3);
-		return $this->players_order[$this->current_turn];
+		$sm = $this->state_machine;
+		$current_state = $sm->getCurrentState();
+
+		if($current_state->has('players_order_reversed'))
+			return $this->players_order[count($this->players_order) - 1 - $this->current_turn];
+		else 
+			return $this->players_order[$this->current_turn];
+	}
+
+	public function isPlayerCurrentPlayer($player)
+	{
+		if(empty($player)) throw new \Exception('Missing parameter.', 1);
+		if(!$player instanceof \Settlers\Player) throw new \Exception('Invalid parameter.', 2);
+
+		return spl_object_hash($this->players[$this->getPlayerTurn()]) == spl_object_hash($player);
 	}
 
 	public function distributeInitialResources()
@@ -423,6 +423,8 @@ class Game {
 
 				return true;
 			}
+
+			return false;
 		}
 		// Default to typical checks for roads
 		else 
