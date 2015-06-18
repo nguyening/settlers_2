@@ -114,4 +114,57 @@ class PlayerTest extends PHPUnit_Framework_TestCase {
 
 		$this->assertCount(2, $player->getPieces());
 	}
+
+	/**
+	 * @depends testCreate
+	 */
+	public function testEmptyDevel($player)
+	{
+		$devel_types = array(
+			\Settlers\Constants::DEVEL_KNIGHT,
+			\Settlers\Constants::DEVEL_MONOPOLY,
+			\Settlers\Constants::DEVEL_ROAD_BUILDING,
+			\Settlers\Constants::DEVEL_YEAR_OF_PLENTY,
+			\Settlers\Constants::DEVEL_VICTORY_POINT
+		);
+		foreach($devel_types as $i => $devel) {
+			$this->assertEquals(0, $player->getDevelCardsCount($devel));
+		}
+
+		return $player;
+	}
+
+	/**
+	 * @depends					testEmptyDevel
+	 * @expectedException		Exception
+	 * @expectedExceptionCode	3
+	 */
+	public function testTakeEmptyDevel($player)
+	{
+		$player->takeDevelCards(\Settlers\Constants::DEVEL_VICTORY_POINT, 2);
+	}
+
+	/**
+	 * @depends testEmptyDevel
+	 */
+	public function testGiveDevelCards($player)
+	{
+		$this->assertEquals(0, $player->getDevelCardsCount(\Settlers\Constants::DEVEL_VICTORY_POINT));
+		$player->addDevelCards(\Settlers\Constants::DEVEL_VICTORY_POINT, 2);
+		$player->addDevelCards(\Settlers\Constants::DEVEL_VICTORY_POINT, 2, false);
+		$this->assertEquals(2, $player->getDevelCardsCount(\Settlers\Constants::DEVEL_VICTORY_POINT));
+		$this->assertEquals(2, $player->getDevelCardsCount(\Settlers\Constants::DEVEL_VICTORY_POINT, false));
+
+		return $player;
+	}
+
+	/**
+	 * @depends testGiveDevelCards
+	 */
+	public function testTakeDevelCards($player)
+	{
+		$player->takeDevelCards(\Settlers\Constants::DEVEL_VICTORY_POINT, 1);
+		$this->assertEquals(1, $player->getDevelCardsCount(\Settlers\Constants::DEVEL_VICTORY_POINT));
+		$this->assertEquals(2, $player->getDevelCardsCount(\Settlers\Constants::DEVEL_VICTORY_POINT, false));
+	}
 }

@@ -134,13 +134,4 @@ abstract class Constants extends BasicEnum {
 			break;
 		}
 	}
-
-	public function diceRoll($num = 1)
-	{
-		$rolls = array();
-		for($i = 0; $i < $num; $i++) {
-			$rolls[] = random_int(0, 6);
-		}
-		return $rolls;
-	}
 }

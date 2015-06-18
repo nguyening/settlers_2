@@ -102,4 +102,53 @@ class GameProduceTest extends PHPUnit_Framework_TestCase {
 		$this->assertEquals(3, $player->getResourceCount(\Settlers\Constants::RESOURCE_SHEEP));
 		$this->assertEquals(1, $p2->getResourceCount(\Settlers\Constants::RESOURCE_SHEEP));
 	}
+
+	public function testDistributeOnRoll()
+	{
+		$game = $this->game;
+		$player = $this->player;
+		$p2 = new \Settlers\Player(array(
+			'user' => 1
+		));
+		$hexes = $this->hexes;
+		$game->addPlayer(1, $p2);
+		
+		$hex = $hexes[0][0];
+		$hex->setTerrain(\Settlers\Constants::TERRAIN_FOREST);
+		$hex->setChit(13);
+
+		$hex = $hexes[-1][0];
+		$hex->setTerrain(\Settlers\Constants::TERRAIN_PASTURE);
+		$hex->setChit(13);
+
+		$hex = $hexes[0][-1];
+		$hex->setTerrain(\Settlers\Constants::TERRAIN_PASTURE);
+		$hex->setChit(13);
+		
+		$hex = $hexes[0][0];
+		$game->buildPiece(
+			$player, $hex->getVertex(0), \Settlers\Constants::BUILD_SETTLEMENT
+		);
+		$game->buildPiece(
+			$player, $hex->getVertex(1), \Settlers\Constants::BUILD_SETTLEMENT
+		);
+		$game->buildPiece(
+			$player, $hex->getVertex(2), \Settlers\Constants::BUILD_SETTLEMENT
+		);
+		$game->buildPiece(
+			$p2, $hex->getVertex(3), \Settlers\Constants::BUILD_SETTLEMENT
+		);
+		$game->buildPiece(
+			$p2, $hex->getVertex(4), \Settlers\Constants::BUILD_SETTLEMENT
+		);
+		$game->buildPiece(
+			$p2, $hex->getVertex(5), \Settlers\Constants::BUILD_SETTLEMENT
+		);
+
+		$game->distributeResources(13);
+
+		$this->assertEquals(3, $player->getResourceCount(\Settlers\Constants::RESOURCE_WOOD));
+		$this->assertEquals(3, $player->getResourceCount(\Settlers\Constants::RESOURCE_SHEEP));
+		$this->assertEquals(1, $p2->getResourceCount(\Settlers\Constants::RESOURCE_SHEEP));
+	}
 }

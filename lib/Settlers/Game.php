@@ -1,8 +1,18 @@
 <?php
 namespace Settlers;
 class Game {
+	const PLAYER_ROLL = 0;
+	const PLAYER_BUILD = 1;
+	const PLAYER_BUY_DEVEL = 2;
+	const PLAYER_PLAY_DEVEL = 3;
+	const PLAYER_MOVE_BARON = 4;
+	const PLAYER_DISCARD_RESOURCES = 5;
+	const PLAYER_TRADE = 6;
+	const PLAYER_END_TURN = 7;
+
 	public $room_size;
 	private $map;
+
 	private $players = array();
 	private $players_order;
 	private $current_turn;
@@ -65,6 +75,15 @@ class Game {
 	 * GAME LOGIC
 	 */
 
+	public function rollDice($num = 1)
+	{
+		$rolls = array();
+		for($i = 0; $i < $num; $i++) {
+			$rolls[] = random_int(0, 6);
+		}
+		return $rolls;
+	}
+
 	public function determinePlayerOrdering()
 	{
 		if(empty($this->players)) throw new \Exception('Invalid action.', 3);
@@ -77,6 +96,17 @@ class Game {
 	{
 		if(empty($this->players_order) || empty($this->players)) throw new \Exception('Invalid action.', 3);
 		return $this->players_order[$this->current_turn];
+	}
+
+	public function distributeResources($roll)
+	{
+		$hexes = $this->map->getProducingHexes($roll);
+		foreach($hexes as $idx => $hex) {
+			if($this->map->isBaronOnHex($hex))
+				continue;
+
+			$this->produceResourcesAtHex($hex);
+		}
 	}
 
 	public function produceResourcesAtHex($hex)

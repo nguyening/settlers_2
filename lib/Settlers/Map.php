@@ -190,6 +190,15 @@ class Map {
 		return $neighbors;
 	}
 
+	public function isBaronOnHex($hex)
+	{
+		if(empty($hex)) throw new \Exception('Missing parameter.', 1);
+		if(!$hex instanceof \Settlers\Hex) throw new \Exception('Invalid parameter.', 2);
+		
+		if(empty($this->baron)) return false;
+		return spl_object_hash($this->baron) == spl_object_hash($hex);
+	}
+
 	public function isAdjacentVerticesOccupied($vertex)
 	{
 		if(empty($vertex)) throw new \Exception('Missing parameter.', 1);
